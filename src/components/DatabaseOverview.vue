@@ -1,26 +1,26 @@
 <template>
     <section class="database-page">
-        <div class="database-heading">
+        <div class="database-heading sk-head">
             <div>
-                <p class="database-kicker">SYSTEM DATABASE</p>
-                <h1>ข้อมูลทั้งหมดในระบบ</h1>
-                <p>ดูตาราง คอลัมน์ และรายการข้อมูลที่ระบบกำลังใช้งาน</p>
-                <small class="security-note">รหัสผ่านจะแสดงเป็นสถานะเท่านั้น เพื่อความปลอดภัย</small>
+                <p class="database-kicker sk-kicker">{{ t('db.kicker') }}</p>
+                <h1>{{ t('db.title') }}</h1>
+                <p>{{ t('db.lead') }}</p>
+                <small class="security-note">{{ t('db.note') }}</small>
             </div>
-            <button class="refresh-button" type="button" @click="loadOverview">รีเฟรชข้อมูล</button>
+            <button class="refresh-button sk-btn sk-btn-soft" type="button" @click="loadOverview">{{ t('db.refresh') }}</button>
         </div>
 
-        <p v-if="error" class="database-error">{{ error }}</p>
-        <p v-else-if="loading" class="database-loading">กำลังโหลดข้อมูล...</p>
+        <p v-if="error" class="database-error sk-msg error" role="alert">{{ t(error) }}</p>
+        <p v-else-if="loading" class="database-loading" aria-busy="true">{{ t('db.loading') }}</p>
 
         <div v-else class="database-tables">
-            <article v-for="table in tables" :key="table.name" class="database-table">
+            <article v-for="table in tables" :key="table.name" class="database-table sk-card">
                 <div class="table-heading">
                     <div>
-                        <span class="table-label">TABLE</span>
+                        <span class="table-label">{{ t('db.table') }}</span>
                         <h2>{{ table.name }}</h2>
                     </div>
-                    <strong>{{ table.count }} รายการ</strong>
+                    <strong class="sk-pill">{{ t('common.items', { n: table.count }) }}</strong>
                 </div>
                 <div class="column-list">
                     <span v-for="column in table.columns" :key="column.column_name">
@@ -28,7 +28,7 @@
                     </span>
                 </div>
                 <div v-if="table.rows.length" class="table-scroll">
-                    <table>
+                    <table class="sk-mono">
                         <thead>
                             <tr>
                                 <th v-for="key in rowKeys(table.rows[0])" :key="key">{{ key }}</th>
@@ -41,9 +41,9 @@
                         </tbody>
                     </table>
                 </div>
-                <p v-else class="empty-table">ยังไม่มีข้อมูลในตารางนี้</p>
+                <p v-else class="empty-table">{{ t('db.empty') }}</p>
             </article>
-            <p v-if="!tables.length" class="empty-table">ไม่พบตารางข้อมูลที่ระบบกำหนดไว้</p>
+            <p v-if="!tables.length" class="empty-table">{{ t('db.noTables') }}</p>
         </div>
     </section>
 </template>
@@ -51,6 +51,7 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import axios from 'axios'
+import { t } from '../i18n.js'
 
 const tables = ref([])
 const loading = ref(true)
@@ -63,7 +64,7 @@ const loadOverview = async () => {
         const response = await axios.get('http://localhost:3000/database/overview')
         tables.value = response.data.tables
     } catch (requestError) {
-        error.value = requestError.response?.data?.error || 'ไม่สามารถโหลดข้อมูลฐานข้อมูลได้'
+        error.value = requestError.response?.data?.error || 'db.loadFail'
     } finally {
         loading.value = false
     }
@@ -100,4 +101,35 @@ td { color: #33434c; }
 .empty-table, .database-loading, .database-error { padding: 22px; color: #71808a; text-align: center; }
 .database-error { color: #c0392b; }
 @media (max-width: 800px) { .database-heading { align-items: start; flex-direction: column; } .database-tables { grid-template-columns: 1fr; } }
+
+/* Skylearn: denser "parent view" styling for data */
+:root[data-theme="sky"] .database-page { max-width: 1280px; margin: 0 auto; padding: 48px 24px 96px; background: none; }
+:root[data-theme="sky"] .database-heading { max-width: none; align-items: flex-end; }
+:root[data-theme="sky"] .database-heading h1 { color: var(--ink); }
+:root[data-theme="sky"] .database-kicker { color: var(--sky-deep) !important; font-size: 14px; letter-spacing: .06em; }
+:root[data-theme="sky"] .security-note { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; padding: 4px 12px; color: #92400e; background: #fef3c7; border-radius: 999px; font-size: 14px; }
+:root[data-theme="sky"] .database-tables { max-width: none; gap: 32px; }
+:root[data-theme="sky"] .table-heading { padding: 24px 24px 16px; }
+:root[data-theme="sky"] .table-label { color: var(--ink-subtle) !important; font-size: 14px; letter-spacing: .08em; }
+:root[data-theme="sky"] .table-heading h2 { color: var(--ink); font-family: var(--font-mono); font-size: 22px; }
+:root[data-theme="sky"] .table-heading strong { font-size: 14px; }
+:root[data-theme="sky"] .column-list { gap: 8px; padding: 0 24px 20px; }
+:root[data-theme="sky"] .column-list span { padding: 4px 10px; color: var(--ink); background: var(--sunken); border-radius: 8px; font-family: var(--font-mono); font-size: 14px; }
+:root[data-theme="sky"] .column-list small { color: var(--sky-deep); }
+:root[data-theme="sky"] .table-scroll { max-height: 420px; overflow: auto; border-color: var(--outline); }
+:root[data-theme="sky"] table { font-size: 14px; }
+:root[data-theme="sky"] th, :root[data-theme="sky"] td { padding: 12px 16px; border-color: var(--outline); }
+:root[data-theme="sky"] th { position: sticky; top: 0; color: var(--ink-muted); background: var(--sunken); font-size: 14px; }
+:root[data-theme="sky"] td { color: var(--ink); }
+:root[data-theme="sky"] tbody tr:nth-child(even) { background: var(--bg); }
+:root[data-theme="sky"] tbody tr:hover { background: var(--sky-soft); }
+:root[data-theme="sky"] .empty-table, :root[data-theme="sky"] .database-loading { padding: 32px; color: var(--ink-muted); font-size: 16px; }
+:root[data-theme="sky"] .database-error { justify-content: center; margin: 0 0 24px; padding: 16px 20px; color: var(--coral-ink); }
+@media (max-width: 1000px) {
+    :root[data-theme="sky"] .database-tables { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+    :root[data-theme="sky"] .database-page { padding: 32px 20px 64px; }
+    :root[data-theme="sky"] .database-heading { align-items: stretch; }
+}
 </style>

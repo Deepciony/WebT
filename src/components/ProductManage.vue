@@ -1,67 +1,67 @@
 <template>
-    <section class="manage-page">
-        <div class="manage-heading">
+    <section class="manage-page sk-page">
+        <div class="manage-heading sk-head">
             <div>
-                <p class="manage-eyebrow">PRODUCT MANAGEMENT</p>
-                <h1>แก้ไขข้อมูลสินค้า</h1>
-                <p>เพิ่มสินค้าใหม่ หรือเลือกสินค้าจากรายการเพื่อแก้ไขข้อมูล</p>
+                <p class="manage-eyebrow sk-kicker">{{ t('manage.kicker') }}</p>
+                <h1>{{ t('manage.title') }}</h1>
+                <p>{{ t('manage.lead') }}</p>
             </div>
-            <button class="manage-secondary" type="button" @click="resetForm">+ สินค้าใหม่</button>
+            <button class="manage-secondary sk-btn sk-btn-soft" type="button" @click="resetForm">{{ t('manage.new') }}</button>
         </div>
 
         <div class="manage-layout">
-            <form class="manage-form" @submit.prevent="saveProduct">
+            <form class="manage-form sk-panel sk-form" @submit.prevent="saveProduct">
                 <div class="form-heading">
-                    <span>{{ selectedId ? 'แก้ไขสินค้า' : 'เพิ่มสินค้าใหม่' }}</span>
-                    <small>{{ selectedId ? `รหัสสินค้า ${selectedId}` : 'กรอกข้อมูลให้ครบถ้วน' }}</small>
+                    <span>{{ t(selectedId ? 'manage.editing' : 'manage.adding') }}</span>
+                    <small>{{ selectedId ? t('manage.idLabel', { id: selectedId }) : t('manage.fillAll') }}</small>
                 </div>
 
                 <label>
-                    ชื่อสินค้า
-                    <input v-model.trim="form.pdName" type="text" required placeholder="เช่น เสื้อ KUSRC">
+                    {{ t('manage.name') }}
+                    <input v-model.trim="form.pdName" type="text" required :placeholder="t('manage.namePh')">
                 </label>
                 <div class="form-two-columns">
                     <label>
-                        ราคา
+                        {{ t('manage.price') }}
                         <input v-model.number="form.pdPrice" type="number" min="0" step="0.01" required placeholder="0.00">
                     </label>
                     <label>
-                        Brand ID
+                        {{ t('manage.brandId') }}
                         <input v-model.trim="form.brandId" type="text" required placeholder="B01">
                     </label>
                     <label>
-                        Brand Name
+                        {{ t('manage.brandName') }}
                         <input v-model.trim="form.brandName" type="text" required placeholder="Brand A">
                     </label>
                 </div>
                 <label>
-                    Product Type ID
+                    {{ t('manage.typeId') }}
                     <input v-model.trim="form.pdTypeId" type="text" required placeholder="T03">
                 </label>
                 <label>
-                    รายละเอียดสินค้า
-                    <textarea v-model.trim="form.pdRemark" rows="4" placeholder="รายละเอียดเพิ่มเติม"></textarea>
+                    {{ t('manage.detail') }}
+                    <textarea v-model.trim="form.pdRemark" rows="4" :placeholder="t('manage.detailPh')"></textarea>
                 </label>
                 <div class="form-actions">
-                    <button class="manage-primary" type="submit">{{ selectedId ? 'บันทึกการแก้ไข' : 'เพิ่มสินค้า' }}</button>
-                    <button class="manage-cancel" type="button" @click="resetForm">ล้างฟอร์ม</button>
+                    <button class="manage-primary sk-btn" type="submit">{{ t(selectedId ? 'manage.saveEdit' : 'manage.add') }}</button>
+                    <button class="manage-cancel sk-btn sk-btn-ghost" type="button" @click="resetForm">{{ t('manage.clear') }}</button>
                 </div>
-                <p v-if="message" class="manage-message" :class="{ error: messageType === 'error' }">{{ message }}</p>
+                <p v-if="message" class="manage-message sk-msg" role="status" :class="{ error: messageType === 'error' }">{{ t(message) }}</p>
             </form>
 
-            <div class="manage-list">
+            <div class="manage-list sk-card">
                 <div class="list-heading">
-                    <h2>รายการสินค้า</h2>
-                    <span>{{ products.length }} รายการ</span>
+                    <h2>{{ t('manage.list') }}</h2>
+                    <span>{{ t('common.items', { n: products.length }) }}</span>
                 </div>
                 <div class="product-list">
-                    <button v-for="product in products" :key="product.pdId" class="product-row" type="button" @click="editProduct(product)">
-                        <span class="product-row-id">#{{ product.pdId }}</span>
+                    <button v-for="product in products" :key="product.pdId" class="product-row" :class="{ selected: selectedId === product.pdId }" type="button" @click="editProduct(product)">
+                        <span class="product-row-id sk-mono">#{{ product.pdId }}</span>
                         <span class="product-row-name">{{ product.pdName }}</span>
-                        <span class="product-row-price">${{ product.pdPrice }}</span>
-                        <span class="product-row-action">แก้ไข</span>
+                        <span class="product-row-price sk-mono">${{ product.pdPrice }}</span>
+                        <span class="product-row-action">{{ t('manage.edit') }}</span>
                     </button>
-                    <p v-if="!products.length" class="empty-list">ยังไม่มีข้อมูลสินค้า</p>
+                    <p v-if="!products.length" class="empty-list">{{ t('manage.empty') }}</p>
                 </div>
             </div>
         </div>
@@ -71,6 +71,7 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
 import axios from 'axios'
+import { t } from '../i18n.js'
 
 const products = ref([])
 const selectedId = ref(null)
@@ -121,12 +122,13 @@ const saveProduct = async () => {
 
         await axios({ method, url: endpoint, data: { ...form } })
         await loadProducts()
-        messageType.value = 'success'
-        message.value = selectedId.value ? 'แก้ไขข้อมูลเรียบร้อยแล้ว' : 'เพิ่มสินค้าเรียบร้อยแล้ว'
+        const doneKey = selectedId.value ? 'manage.updated' : 'manage.added'
         resetForm()
+        messageType.value = 'success'
+        message.value = doneKey
     } catch (error) {
         messageType.value = 'error'
-        message.value = error.response?.data?.error || 'ไม่สามารถบันทึกข้อมูลได้'
+        message.value = error.response?.data?.error || 'manage.saveFail'
     }
 }
 
@@ -135,7 +137,7 @@ onMounted(async () => {
         await loadProducts()
     } catch (error) {
         messageType.value = 'error'
-        message.value = 'ไม่สามารถโหลดข้อมูลสินค้าได้'
+        message.value = 'manage.loadFail'
     }
 })
 </script>
@@ -180,5 +182,51 @@ onMounted(async () => {
     .manage-form, .manage-list { padding: 16px; }
     .product-row { grid-template-columns: 42px minmax(0, 1fr) 70px; }
     .product-row-action { display: none; }
+}
+
+/* Skylearn */
+:root[data-theme="sky"] .manage-heading { align-items: flex-end; }
+:root[data-theme="sky"] .manage-heading h1 { color: var(--ink); }
+:root[data-theme="sky"] .manage-eyebrow { margin-bottom: 8px !important; color: var(--sky-deep) !important; }
+:root[data-theme="sky"] .manage-layout { grid-template-columns: minmax(320px, 460px) minmax(0, 1fr); gap: 32px; }
+:root[data-theme="sky"] .manage-form { position: sticky; top: 120px; padding: 32px; }
+:root[data-theme="sky"] .manage-list { padding: 32px; }
+:root[data-theme="sky"] .form-heading, :root[data-theme="sky"] .list-heading { margin-bottom: 24px; color: var(--ink); font-family: var(--font-display); font-size: 24px; }
+:root[data-theme="sky"] .form-heading small, :root[data-theme="sky"] .list-heading span { color: var(--ink-muted); font-family: var(--font-body); font-size: 16px; }
+:root[data-theme="sky"] .list-heading h2 { font-size: 24px; }
+:root[data-theme="sky"] .form-two-columns { gap: 0 16px; }
+:root[data-theme="sky"] .form-two-columns label:last-child { grid-column: 1 / -1; }
+:root[data-theme="sky"] .form-actions { flex-wrap: wrap; gap: 12px; margin-top: 8px; }
+:root[data-theme="sky"] .form-actions .sk-btn { flex: 1 1 160px; }
+:root[data-theme="sky"] .product-list { display: grid; gap: 8px; overflow: visible; border: 0; }
+:root[data-theme="sky"] .product-row {
+    grid-template-columns: 64px minmax(0, 1fr) auto auto;
+    gap: 16px;
+    min-height: 64px;
+    padding: 12px 16px;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--outline);
+    border-radius: 16px;
+    font-family: var(--font-body);
+    font-size: 18px;
+    transition: border-color var(--dur), background var(--dur), transform var(--dur) var(--ease);
+}
+:root[data-theme="sky"] .product-row:last-child { border-bottom: 1px solid var(--outline); }
+:root[data-theme="sky"] .product-row:hover { background: var(--bg); border-color: var(--sky-bright); transform: translateX(4px); }
+:root[data-theme="sky"] .product-row.selected { background: var(--sky-soft); border: 3px solid var(--sky); box-shadow: var(--shadow-active); }
+:root[data-theme="sky"] .product-row-id { color: var(--ink-subtle); font-size: 14px; }
+:root[data-theme="sky"] .product-row-price { font-weight: 700; }
+:root[data-theme="sky"] .product-row-action { padding: 6px 14px; color: var(--sky-deep); background: var(--sky-soft); border-radius: 999px; font-size: 14px; font-weight: 700; }
+:root[data-theme="sky"] .empty-list { padding: 48px 24px; color: var(--ink-muted); background: var(--sunken); border: 2px dashed var(--outline-strong); border-radius: 16px; }
+@media (max-width: 960px) {
+    :root[data-theme="sky"] .manage-layout { grid-template-columns: 1fr; }
+    :root[data-theme="sky"] .manage-form { position: static; }
+}
+@media (max-width: 520px) {
+    :root[data-theme="sky"] .manage-heading { align-items: stretch; }
+    :root[data-theme="sky"] .manage-form, :root[data-theme="sky"] .manage-list { padding: 24px 16px; }
+    :root[data-theme="sky"] .form-two-columns { grid-template-columns: 1fr; }
+    :root[data-theme="sky"] .product-row { grid-template-columns: 48px minmax(0, 1fr) auto; }
 }
 </style>

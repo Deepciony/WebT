@@ -1,0 +1,181 @@
+/* Skylearn theme. Every rule is scoped to :root[data-theme="sky"] so the classic UI stays untouched. */
+:root[data-theme="sky"] {
+  --sky: #3b82f6;
+  --sky-bright: #60a5fa;
+  --sky-deep: #1d4ed8;
+  --sky-soft: #dbeafe;
+  --sun: #fbbf24;
+  --sun-bright: #fcd34d;
+  --sun-deep: #d97706;
+  --leaf: #22c55e;
+  --leaf-soft: #dcfce7;
+  --leaf-deep: #16a34a;
+  --leaf-ink: #15803d;
+  --coral: #f87171;
+  --coral-soft: #fee2e2;
+  --coral-ink: #b42c2c;
+  --berry: #a855f7;
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --sunken: #f1f5f9;
+  --ink: #0f172a;
+  --ink-muted: #475569;
+  --ink-subtle: #64748b;
+  --ink-faint: #cbd5e1;
+  --outline: #e2e8f0;
+  --outline-strong: #94a3b8;
+
+  --font-display: 'Playfair Display', 'Sarabun', Georgia, serif;
+  --font-brand: 'Playfair Display', Georgia, serif;
+  --font-body: 'IBM Plex Sans', 'Sarabun', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --r-input: 12px;
+  --r-btn: 16px;
+  --r-card: 20px;
+  --r-panel: 28px;
+  --tap: 56px;
+  --shadow-hover: 0 8px 24px rgba(15, 23, 42, .06);
+  --shadow-active: 0 12px 32px rgba(59, 130, 246, .15);
+  --shadow-modal: 0 24px 48px rgba(15, 23, 42, .12);
+  --ease: cubic-bezier(.34, 1.56, .64, 1);
+  --dur: 240ms;
+
+  color-scheme: light;
+}
+
+:root[data-theme="sky"] body {
+  color: var(--ink);
+  background: var(--bg);
+  font-family: var(--font-body);
+  font-size: 18px;
+  line-height: 1.55;
+  letter-spacing: .01em;
+}
+
+:root[data-theme="sky"] #app { max-width: none; padding: 0; }
+:where(:root[data-theme="sky"]) :is(h1, h2, h3) { color: var(--ink); font-family: var(--font-display); font-weight: 600; letter-spacing: 0; }
+:where(:root[data-theme="sky"]) a { padding: 0; color: var(--sky-deep); }
+:where(:root[data-theme="sky"]) a:hover { background: none; }
+:root[data-theme="sky"] :focus-visible { outline: 3px solid var(--sky); outline-offset: 3px; }
+
+/* Layout */
+:root[data-theme="sky"] .sk-page { max-width: 1280px; margin: 0 auto; padding: 48px 24px 96px; }
+:root[data-theme="sky"] .sk-kicker { margin: 0 0 8px; color: var(--sky-deep); font-family: var(--font-body); font-size: 14px; font-weight: 700; letter-spacing: .06em; }
+:root[data-theme="sky"] .sk-head { margin-bottom: 32px; padding-bottom: 0; border: 0; }
+:root[data-theme="sky"] .sk-head h1 { margin: 0 0 8px; font-size: clamp(32px, 5vw, 40px); line-height: 1.2; }
+:root[data-theme="sky"] .sk-head p:not(.sk-kicker) { color: var(--ink-muted); font-size: 18px; }
+
+/* Cards */
+:root[data-theme="sky"] .sk-card {
+  background: var(--surface);
+  border: 1px solid var(--outline);
+  border-radius: var(--r-card);
+  box-shadow: none;
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+:root[data-theme="sky"] .sk-card-lift:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); }
+:root[data-theme="sky"] .sk-panel { background: var(--surface); border: 1px solid var(--outline); border-radius: var(--r-panel); box-shadow: var(--shadow-active); }
+
+/* Buttons */
+:root[data-theme="sky"] .sk-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: var(--tap);
+  padding: 12px 28px;
+  color: #fff;
+  background: var(--sky);
+  border: 0;
+  border-bottom: 1px solid transparent;
+  border-radius: var(--r-btn);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 18px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background var(--dur) var(--ease), transform 120ms ease;
+}
+:root[data-theme="sky"] .sk-btn:hover { color: #fff; background: var(--sky-deep); border-bottom-color: var(--sky-bright); }
+:root[data-theme="sky"] .sk-btn:active { transform: scale(.97); }
+:root[data-theme="sky"] .sk-btn:disabled { color: var(--ink-subtle); background: var(--sunken); cursor: not-allowed; }
+:root[data-theme="sky"] .sk-btn-big { min-height: 64px; padding: 16px 40px; font-size: 20px; }
+:root[data-theme="sky"] .sk-btn-leaf { background: var(--leaf-deep); }
+:root[data-theme="sky"] .sk-btn-leaf:hover { background: var(--leaf-ink); border-bottom-color: var(--leaf); }
+:root[data-theme="sky"] .sk-btn-soft { color: var(--sky-deep); background: var(--sky-soft); }
+:root[data-theme="sky"] .sk-btn-soft:hover { color: #fff; background: var(--sky); }
+:root[data-theme="sky"] .sk-btn-ghost { color: var(--ink-muted); background: var(--surface); border: 1px solid var(--outline); }
+:root[data-theme="sky"] .sk-btn-ghost:hover { color: var(--ink); background: var(--sunken); border-color: var(--outline-strong); }
+:root[data-theme="sky"] .sk-btn-coral { color: var(--coral-ink); background: var(--surface); border: 1px solid var(--coral); }
+:root[data-theme="sky"] .sk-btn-coral:hover { color: var(--coral-ink); background: var(--coral-soft); }
+:root[data-theme="sky"] .sk-btn-block { width: 100%; }
+
+/* Forms */
+:root[data-theme="sky"] .sk-form label { display: block; margin-bottom: 20px; color: var(--ink); font-size: 16px; font-weight: 700; text-align: left; }
+:root[data-theme="sky"] .sk-form :is(input, textarea) {
+  display: block;
+  width: 100%;
+  min-height: var(--tap);
+  margin-top: 8px;
+  padding: 14px 18px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--outline-strong);
+  border-radius: var(--r-input);
+  outline: 0;
+  font-family: var(--font-body);
+  font-size: 18px;
+  font-weight: 400;
+  transition: border-color var(--dur), box-shadow var(--dur);
+}
+:root[data-theme="sky"] .sk-form :is(input, textarea)::placeholder { color: var(--ink-subtle); }
+:root[data-theme="sky"] .sk-form :is(input, textarea):focus { border-color: var(--sky-deep); box-shadow: 0 0 0 4px var(--sky-soft); }
+
+/* Feedback (always icon + color + words) */
+:root[data-theme="sky"] .sk-msg {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 20px 0 0;
+  padding: 14px 18px;
+  color: var(--leaf-ink);
+  background: var(--leaf-soft);
+  border: 1px solid var(--leaf);
+  border-radius: var(--r-input);
+  font-size: 16px;
+  font-weight: 700;
+  text-align: left;
+}
+:root[data-theme="sky"] .sk-msg::before { content: '✓'; flex: none; display: grid; place-items: center; width: 24px; height: 24px; color: #fff; background: var(--leaf-deep); border-radius: 999px; font-size: 14px; }
+:root[data-theme="sky"] .sk-msg.error { color: var(--coral-ink); background: var(--coral-soft); border: 1px dashed var(--coral); animation: sk-shake 240ms ease-in-out 2; }
+:root[data-theme="sky"] .sk-msg.error::before { content: '!'; background: var(--coral-ink); }
+
+/* Pills */
+:root[data-theme="sky"] .sk-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; color: var(--sky-deep); background: var(--sky-soft); border-radius: 999px; font-size: 14px; font-weight: 700; }
+:root[data-theme="sky"] .sk-mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+/* Empty / loading states */
+:root[data-theme="sky"] .sk-empty { padding: 64px 24px; text-align: center; background: var(--sunken); border: 2px dashed var(--outline-strong); border-radius: var(--r-card); }
+:root[data-theme="sky"] .sk-empty h2 { margin: 16px 0 8px; font-size: 24px; }
+:root[data-theme="sky"] .sk-empty p { margin: 0 0 24px; color: var(--ink-muted); }
+:root[data-theme="sky"] .sk-empty-icon { display: inline-grid; place-items: center; width: 72px; height: 72px; color: var(--sky-deep); background: var(--sky-soft); border-radius: 999px; }
+:root[data-theme="sky"] .sk-skeleton { background: linear-gradient(90deg, var(--sunken), #e8eef5, var(--sunken)); background-size: 200% 100%; animation: sk-shimmer 1.2s linear infinite; }
+
+@keyframes sk-shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+@keyframes sk-shimmer { to { background-position: -200% 0; } }
+@keyframes sk-pop { from { transform: scale(0); } 70% { transform: scale(1.12); } to { transform: scale(1); } }
+
+@media (max-width: 640px) {
+  :root[data-theme="sky"] .sk-page { padding: 32px 20px 64px; }
+  :root[data-theme="sky"] .sk-btn-big { padding: 14px 24px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="sky"] *, :root[data-theme="sky"] *::before, :root[data-theme="sky"] *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 120ms !important;
+  }
+  :root[data-theme="sky"] .sk-card-lift:hover { transform: none; }
+}
