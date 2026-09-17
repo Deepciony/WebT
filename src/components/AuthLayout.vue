@@ -10,8 +10,7 @@
 
         <div class="auth-card sk-panel sk-form">
             <div v-if="isSky" class="auth-brand">
-                <span class="auth-brand-mark">KU</span>
-                <strong>KUSHOP</strong>
+                <img class="auth-brand-logo" src="http://localhost:3000/img_pd/LogoSRC.png" alt="KUSHOP">
                 <small>{{ t('store.name') }}</small>
             </div>
             <slot />
@@ -50,6 +49,7 @@ defineProps({
 
 /* Skylearn: standalone auth page, card only */
 :root[data-theme="sky"] .auth-page {
+    position: relative;
     grid-template-columns: minmax(0, 480px);
     place-content: center;
     gap: 0;
@@ -60,23 +60,10 @@ defineProps({
         radial-gradient(circle at 85% 90%, var(--leaf-soft) 0, transparent 34%),
         var(--bg);
 }
-:root[data-theme="sky"] .auth-switches { justify-self: end; margin-bottom: 16px; }
+:root[data-theme="sky"] .auth-switches { position: absolute; top: 24px; right: 28px; z-index: 2; }
 :root[data-theme="sky"] .auth-card { padding: 40px; animation: sk-pop 480ms var(--ease); }
 :root[data-theme="sky"] .auth-brand { display: grid; justify-items: center; gap: 4px; margin-bottom: 28px; text-align: center; }
-:root[data-theme="sky"] .auth-brand-mark {
-    display: grid;
-    place-items: center;
-    width: 64px;
-    height: 64px;
-    margin-bottom: 12px;
-    color: #fff;
-    background: var(--sky);
-    border-radius: 20px;
-    box-shadow: inset 0 -4px 0 var(--sky-deep), 0 12px 24px rgba(59, 130, 246, .25);
-    font-family: var(--font-brand);
-    font-size: 24px;
-    font-weight: 700;
-}
+:root[data-theme="sky"] .auth-brand-logo { display: block; width: min(100%, 320px); height: auto; margin-bottom: 12px; padding: 0; background: transparent !important; border: 0; border-radius: 0; box-shadow: none !important; object-fit: contain; }
 :root[data-theme="sky"] .auth-brand strong { color: var(--ink); font-family: var(--font-brand); font-size: 30px; font-weight: 700; letter-spacing: .02em; }
 :root[data-theme="sky"] .auth-brand small { color: var(--ink-muted); font-size: 16px; }
 :root[data-theme="sky"] .auth-card :slotted(h2) { margin: 0 0 20px; color: var(--ink); font-size: 26px; }
@@ -84,7 +71,8 @@ defineProps({
 :root[data-theme="sky"] .auth-card :slotted(.auth-switch-link) { display: flex; align-items: center; justify-content: center; min-height: 56px; margin-top: 12px; color: var(--sky-deep); border-radius: var(--r-btn); font-size: 16px; }
 :root[data-theme="sky"] .auth-card :slotted(.auth-switch-link:hover) { background: var(--sky-soft); }
 @media (max-width: 480px) {
-    :root[data-theme="sky"] .auth-page { place-content: start stretch; padding: 24px 16px; }
+    :root[data-theme="sky"] .auth-page { place-content: start stretch; padding: 88px 16px 24px; }
+    :root[data-theme="sky"] .auth-switches { top: 16px; right: 16px; }
     :root[data-theme="sky"] .auth-card { padding: 28px 20px; }
 }
 </style>

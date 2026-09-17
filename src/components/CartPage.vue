@@ -9,7 +9,7 @@
         <div v-if="cart.items.length" class="cart-layout">
             <div class="cart-items">
                 <article v-for="(item, index) in cart.items" :key="item.pdId" class="cart-item sk-card">
-                    <img :src="`http://localhost:3000/img_pd/${String(item.pdId - 3).padStart(3, '0')}.jpg`" :alt="t('product.imgAlt')">
+                    <img :src="item.logosrc ? `http://localhost:3000${item.logosrc}` : `http://localhost:3000/products/${item.pdId}/image`" :alt="t('product.imgAlt')">
                     <div class="cart-item-info"><small>{{ item.brand?.brandName || 'KUSHOP' }}</small><h2>{{ item.pdName }}</h2><p class="sk-mono">${{ item.pdPrice }}</p></div>
                     <div class="quantity-control">
                         <button type="button" :disabled="item.quantity <= 1" :aria-label="t('cart.decrease', { name: item.pdName })" @click="updateQuantity(item.pdId, item.quantity - 1)">−</button>

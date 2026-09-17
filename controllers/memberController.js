@@ -104,6 +104,80 @@ export async function getMember(req, res) {
     }
 }
 
+export async function updateMember(req, res) {
+    const token = req.cookies.token;
+    if (!token) {
+        return res.status(401).json({ error: 'profile.notAuthenticated' });
+    }
+
+    const { memName, currentPassword, newPassword, confirmPassword } = req.body;
+    const nextName = typeof memName === 'string' ? memName.trim() : '';
+
+    if (!nextName) {
+        return res.status(400).json({ error: 'profile.nameRequired' });
+    }
+    if (nextName.length > 100) {
+        return res.status(400).json({ error: 'profile.nameTooLong' });
+    }
+    if (newPassword || currentPassword || confirmPassword) {
+        if (!currentPassword || !newPassword || !confirmPassword) {
+            return res.status(400).json({ error: 'profile.passwordFieldsRequired' });
+        }
+        if (newPassword.length < 6) {
+            return res.status(400).json({ error: 'profile.passwordTooShort' });
+        }
+        if (newPassword !== confirmPassword) {
+            return res.status(400).json({ error: 'profile.passwordMismatch' });
+        }
+    }
+
+    try {
+        const member = jwt.verify(token, process.env.SECRET_KEY);
+        const result = await database.query({
+            text: `SELECT "memEmail", "memHash", "dutyId"
+                   FROM "members" WHERE "memEmail" = $1;`,
+            values: [member.memEmail]
+        });
+        const currentMember = result.rows[0];
+
+        if (!currentMember) {
+            return res.status(404).json({ error: 'profile.notFound' });
+        }
+        if (newPassword && !(await bcrypt.compare(currentPassword, currentMember.memHash))) {
+            return res.status(401).json({ error: 'profile.currentPasswordWrong' });
+        }
+
+        const nextHash = newPassword
+            ? await bcrypt.hash(newPassword, 11)
+            : currentMember.memHash;
+        await database.query({
+            text: `UPDATE "members"
+                   SET "memName" = $1, "memHash" = $2
+                   WHERE "memEmail" = $3;`,
+            values: [nextName, nextHash, member.memEmail]
+        });
+
+        const nextToken = jwt.sign({
+            memEmail: member.memEmail,
+            memName: nextName,
+            dutyId: currentMember.dutyId
+        }, process.env.SECRET_KEY, { expiresIn: '1h' });
+        res.cookie('token', nextToken, { ...cookieOptions, maxAge: 3600000 });
+        return res.json({
+            memEmail: member.memEmail,
+            memName: nextName,
+            dutyId: currentMember.dutyId,
+            login: true
+        });
+    } catch (err) {
+        if (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError') {
+            return res.status(401).json({ error: 'profile.notAuthenticated' });
+        }
+        console.error(err);
+        return res.status(500).json({ error: 'profile.updateFail' });
+    }
+}
+
 export async function logoutMember(req, res) {
     console.log(`GET /members/logout is requested.`);
     try {

@@ -1,9 +1,9 @@
 /* Skylearn theme. Every rule is scoped to :root[data-theme="sky"] so the classic UI stays untouched. */
 :root[data-theme="sky"] {
-  --sky: #3b82f6;
-  --sky-bright: #60a5fa;
-  --sky-deep: #1d4ed8;
-  --sky-soft: #dbeafe;
+  --sky: #087f73;
+  --sky-bright: #1aa18d;
+  --sky-deep: #056257;
+  --sky-soft: #d8f1ec;
   --sun: #fbbf24;
   --sun-bright: #fcd34d;
   --sun-deep: #d97706;
@@ -36,7 +36,7 @@
   --r-panel: 28px;
   --tap: 56px;
   --shadow-hover: 0 8px 24px rgba(15, 23, 42, .06);
-  --shadow-active: 0 12px 32px rgba(59, 130, 246, .15);
+  --shadow-active: 0 12px 32px rgba(8, 127, 115, .15);
   --shadow-modal: 0 24px 48px rgba(15, 23, 42, .12);
   --ease: cubic-bezier(.34, 1.56, .64, 1);
   --dur: 240ms;

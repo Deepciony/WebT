@@ -1,7 +1,7 @@
 <template>
     <article class="product-card sk-card sk-card-lift">
         <div class="product-image">
-            <img :src="`http://localhost:3000/img_pd/${String(product.pdId - 3).padStart(3, '0')}.jpg`"
+            <img :src="product.logosrc ? `http://localhost:3000${product.logosrc}` : `http://localhost:3000/products/${product.pdId}/image`"
                 :alt="product.pdName" loading="lazy">
         </div>
         <div class="product-body">

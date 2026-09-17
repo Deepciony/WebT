@@ -44,7 +44,7 @@ const emit = defineEmits(['update:modelValue'])
     transition: background var(--dur) var(--ease), color var(--dur);
 }
 .is-sky button:hover { color: var(--ink); }
-.is-sky button.active { color: #fff; background: var(--sky); box-shadow: 0 4px 12px rgba(59, 130, 246, .3); }
+.is-sky button.active { color: #fff; background: var(--sky); box-shadow: 0 4px 12px rgba(8, 127, 115, .3); }
 @media (max-width: 560px) {
     .is-sky button { padding: 0 11px; }
 }

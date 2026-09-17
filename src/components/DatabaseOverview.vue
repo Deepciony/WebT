@@ -32,11 +32,17 @@
                         <thead>
                             <tr>
                                 <th v-for="key in rowKeys(table.rows[0])" :key="key">{{ key }}</th>
+                                <th v-if="table.name === 'members'">{{ t('db.actions') }}</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr v-for="(row, index) in table.rows" :key="index">
                                 <td v-for="key in rowKeys(row)" :key="key">{{ formatValue(row[key]) }}</td>
+                                <td v-if="table.name === 'members'">
+                                    <button class="delete-member" type="button" @click="deleteMember(row.memEmail)">
+                                        {{ t('db.delete') }}
+                                    </button>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
@@ -73,6 +79,18 @@ const loadOverview = async () => {
 const rowKeys = (row) => Object.keys(row)
 const formatValue = (value) => value === null || value === undefined ? '-' : value
 
+const deleteMember = async (memEmail) => {
+    if (!window.confirm(t('db.confirmDelete', { email: memEmail }))) return
+
+    error.value = ''
+    try {
+        await axios.delete(`http://localhost:3000/database/members/${encodeURIComponent(memEmail)}`)
+        await loadOverview()
+    } catch (requestError) {
+        error.value = requestError.response?.data?.error || 'db.deleteMemberFail'
+    }
+}
+
 onMounted(loadOverview)
 </script>
 
@@ -98,6 +116,8 @@ table { width: 100%; border-collapse: collapse; font-size: 12px; white-space: no
 th, td { padding: 10px 12px; border-bottom: 1px solid #edf0ef; text-align: left; }
 th { color: #53636d; background: #f7f9f8; font-size: 11px; }
 td { color: #33434c; }
+.delete-member { padding: 6px 10px; color: #c0392b; background: #fff; border: 1px solid #e2b8b2; border-radius: 5px; cursor: pointer; font-weight: 700; }
+.delete-member:hover { color: #fff; background: #c0392b; }
 .empty-table, .database-loading, .database-error { padding: 22px; color: #71808a; text-align: center; }
 .database-error { color: #c0392b; }
 @media (max-width: 800px) { .database-heading { align-items: start; flex-direction: column; } .database-tables { grid-template-columns: 1fr; } }
@@ -121,6 +141,8 @@ td { color: #33434c; }
 :root[data-theme="sky"] th, :root[data-theme="sky"] td { padding: 12px 16px; border-color: var(--outline); }
 :root[data-theme="sky"] th { position: sticky; top: 0; color: var(--ink-muted); background: var(--sunken); font-size: 14px; }
 :root[data-theme="sky"] td { color: var(--ink); }
+:root[data-theme="sky"] .delete-member { color: var(--coral-ink); background: var(--surface); border-color: var(--coral); }
+:root[data-theme="sky"] .delete-member:hover { color: #fff; background: var(--coral-ink); }
 :root[data-theme="sky"] tbody tr:nth-child(even) { background: var(--bg); }
 :root[data-theme="sky"] tbody tr:hover { background: var(--sky-soft); }
 :root[data-theme="sky"] .empty-table, :root[data-theme="sky"] .database-loading { padding: 32px; color: var(--ink-muted); font-size: 16px; }

@@ -39,6 +39,13 @@ export const useAuthStore = defineStore('auth', () => {
         logout()
     }
 
+    const updateProfile = async (profile) => {
+        const res = await axios.put('http://localhost:3000/members/profile', profile)
+        member.value = res.data
+        isLogin.value = true
+        return res.data
+    }
+
     // Dev-only: pretend to be signed in when no API/DB is running
     const fakeLogin = () => {
         member.value = { memEmail: 'dev@localhost', memName: 'Dev', dutyId: 'member', login: true }
@@ -46,5 +53,5 @@ export const useAuthStore = defineStore('auth', () => {
         checked.value = true
     }
 
-    return { isLogin, member, checked, login, logout, getMember, memLogout, fakeLogin }
+    return { isLogin, member, checked, login, logout, getMember, memLogout, updateProfile, fakeLogin }
 })

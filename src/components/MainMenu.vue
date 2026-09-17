@@ -2,8 +2,7 @@
   <header v-if="isSky" class="sky-topbar">
     <div class="sky-topbar-inner">
       <router-link to="/" class="sky-brand" :aria-label="t('nav.homeAria')">
-        <span class="sky-brand-mark">KU</span>
-        <span class="sky-brand-name">KUSHOP</span>
+        <img class="sky-brand-logo" src="http://localhost:3000/img_pd/LogoSRC.png" alt="KUSHOP">
       </router-link>
 
       <nav class="sky-nav" :aria-label="t('nav.menu')">
@@ -85,7 +84,6 @@ const router = useRouter()
 const memName = computed(() => authStore.member?.memName)
 
 const memLogout = async () => {
-  if (!window.confirm(t('member.confirmLogout'))) return
   await authStore.memLogout()
   router.push('/login')
 }
@@ -125,19 +123,7 @@ const visibleLinks = computed(() => links.filter((link) =>
   padding: 12px clamp(20px, 3vw, 48px);
 }
 .sky-brand { display: inline-flex; flex: none; align-items: center; gap: 12px; min-height: 56px; color: var(--ink); text-decoration: none; }
-.sky-brand-mark {
-  display: grid;
-  place-items: center;
-  width: 48px;
-  height: 48px;
-  color: #fff;
-  background: var(--sky);
-  border-radius: 16px;
-  box-shadow: inset 0 -3px 0 var(--sky-deep);
-  font-family: var(--font-brand);
-  font-size: 18px;
-  font-weight: 700;
-}
+.sky-brand-logo { display: block; width: 152px; height: 48px; padding: 0; background: transparent !important; border: 0; border-radius: 0; box-shadow: none !important; object-fit: contain; object-position: left center; }
 .sky-brand-name { font-family: var(--font-brand); font-size: 24px; font-weight: 700; letter-spacing: .04em; }
 .sky-nav { display: flex; flex: 1; gap: 4px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
 .sky-nav-link {

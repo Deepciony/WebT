@@ -57,7 +57,7 @@
         <div class="row">
             <div v-for="(pd,pdId) in product" :key="pdId" class="col-lg-4 col-md-6 col-sm-12">
                 <div class="card mt-3" style="width: 18rem; background-color: #EEEEEE; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
-                    <img :src="`http://localhost:3000/img_pd/${String(pd.pdId - 3).padStart(3, '0')}.jpg`" class="card-img-top p-2" :alt="t('product.imgAlt')">
+                    <img :src="pd.logosrc ? `http://localhost:3000${pd.logosrc}` : `http://localhost:3000/products/${pd.pdId}/image`" class="card-img-top p-2" :alt="t('product.imgAlt')">
                     <div class="card-body">
                         <h5 class="card-title">{{ pd.pdName }}</h5>
                         <p class="card-text">{{ pd.brand?.brandName || t('product.noBrand') }} - ${{ pd.pdPrice }}</p>

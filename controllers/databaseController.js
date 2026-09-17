@@ -1,6 +1,38 @@
 import database from "../database.js";
+import jwt from "jsonwebtoken";
 
-const tables = ["products", "brands", "pdTypes", "users"];
+const tables = ["products", "brands", "members", "pdTypes"];
+
+export async function deleteMember(req, res) {
+    const token = req.cookies.token;
+    if (!token) {
+        return res.status(401).json({ error: 'profile.notAuthenticated' });
+    }
+    try {
+        jwt.verify(token, process.env.SECRET_KEY);
+    } catch (err) {
+        return res.status(401).json({ error: 'profile.notAuthenticated' });
+    }
+
+    const memEmail = typeof req.params.memEmail === 'string' ? req.params.memEmail.trim() : '';
+    if (!memEmail) {
+        return res.status(400).json({ error: 'db.memberEmailRequired' });
+    }
+
+    try {
+        const result = await database.query({
+            text: `DELETE FROM "members" WHERE "memEmail" = $1 RETURNING "memEmail";`,
+            values: [memEmail]
+        });
+        if (!result.rowCount) {
+            return res.status(404).json({ error: 'db.memberNotFound' });
+        }
+        return res.status(200).json({ deleted: result.rows[0].memEmail });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: 'db.deleteMemberFail' });
+    }
+}
 
 export async function getDatabaseOverview(req, res) {
     try {
@@ -23,14 +55,13 @@ export async function getDatabaseOverview(req, res) {
                 values: [tableName]
             });
 
-            const dataQuery = tableName === 'users'
-                 ? `SELECT "userId", "username", "email",
-                         CASE WHEN "passwordHash" IS NOT NULL
+            const dataQuery = tableName === 'members'
+                ? `SELECT "memEmail", "memName", "dutyId",
+                         CASE WHEN "memHash" IS NOT NULL
                              THEN 'ตั้งรหัสผ่านแล้ว'
                              ELSE 'ยังไม่ได้ตั้งรหัสผ่าน'
-                         END AS "passwordStatus",
-                         "createdAt"
-                    FROM "users" ORDER BY "userId";`
+                         END AS "passwordStatus"
+                    FROM "members" ORDER BY "memEmail";`
                 : `SELECT * FROM "${tableName}" LIMIT 100;`;
             const dataResult = await database.query(dataQuery);
 

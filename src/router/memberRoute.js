@@ -5,6 +5,7 @@ const router = express.Router();
 
 router.get("/members/detail", memberC.getMember);
 router.get("/members/logout", memberC.logoutMember);
+router.put("/members/profile", memberC.updateMember);
 router.post("/members", memberC.postMember);
 router.post("/members/login", memberC.loginMember);
 

@@ -1,10 +1,66 @@
 import database from "../database.js";
+import fs from "fs/promises";
+import path from "path";
+import multer from "multer";
+
+const imageDirectory = path.resolve('img_pd');
+const imageUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: (req, file, callback) => {
+        callback(null, ['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype));
+    }
+});
+
+const imageStem = (productId) => {
+    const numericId = Number(productId);
+    return Number.isNaN(numericId) ? String(productId) : String(numericId - 3).padStart(3, '0');
+};
+
+export const uploadProductImage = imageUpload.single('image');
+
+export async function getProductImage(req, res) {
+    try {
+        const stem = imageStem(req.params.id);
+        const files = await fs.readdir(imageDirectory);
+        const filename = files.find((file) => path.parse(file).name === stem);
+        if (!filename) return res.status(404).send('Image not found');
+        return res.sendFile(path.join(imageDirectory, filename));
+    } catch (err) {
+        console.error(err);
+        return res.status(404).send('Image not found');
+    }
+}
+
+export async function uploadProductImageFile(req, res) {
+    if (!req.file) {
+        return res.status(400).json({ error: 'manage.imageInvalid' });
+    }
+
+    try {
+        const stem = imageStem(req.params.id);
+        await fs.mkdir(imageDirectory, { recursive: true });
+        const files = await fs.readdir(imageDirectory);
+        await Promise.all(files
+            .filter((file) => path.parse(file).name === stem)
+            .map((file) => fs.unlink(path.join(imageDirectory, file))));
+
+        const extension = req.file.mimetype === 'image/png'
+            ? '.png'
+            : req.file.mimetype === 'image/webp' ? '.webp' : '.jpg';
+        await fs.writeFile(path.join(imageDirectory, `${stem}${extension}`), req.file.buffer);
+        return res.status(200).json({ imageUrl: `/products/${req.params.id}/image` });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: 'manage.imageUploadFail' });
+    }
+}
 
 export async function getAllProduct(req, res) {
     console.log(`GET /products request received`)
     try {
         const result = await database.query(`
-            SELECT p.*,
+            SELECT p.*, '/products/' || p."pdId" || '/image' AS logosrc,
             (
                 SELECT row_to_json(brand_obj)
                 FROM (
@@ -35,7 +91,7 @@ export async function getProductById(req, res) {
     console.log(`GET /products/${req.params.id} request received`)
     try {
         const result = await database.query({
-            text: `SELECT p.*,
+            text: `SELECT p.*, '/products/' || p."pdId" || '/image' AS logosrc,
             (
                 SELECT row_to_json(brand_obj)
                 FROM (
@@ -76,11 +132,17 @@ export async function createProduct(req, res) {
                    ON CONFLICT ("brandId") DO UPDATE SET "brandName" = EXCLUDED."brandName";`,
             values: [brandId.trim(), brandName.trim()]
         });
+        const nextIdResult = await database.query(`
+            SELECT LPAD((COALESCE(MAX(CASE WHEN "pdId" ~ '^[0-9]+$'
+                                            THEN "pdId"::integer END), 0) + 1)::text, 3, '0') AS "pdId"
+            FROM products;
+        `);
+        const nextProductId = nextIdResult.rows[0].pdId;
         const result = await database.query({
-            text: `INSERT INTO products ("pdName", "pdPrice", "pdRemark", "brandId", "pdTypeId")
-                   VALUES ($1, $2, $3, $4, $5)
+            text: `INSERT INTO products ("pdId", "pdName", "pdPrice", "pdRemark", "brandId", "pdTypeId")
+                   VALUES ($1, $2, $3, $4, $5, $6)
                    RETURNING *;`,
-            values: [pdName, pdPrice, pdRemark || '', brandId, pdTypeId]
+            values: [nextProductId, pdName, pdPrice, pdRemark || '', brandId, pdTypeId]
         });
         res.status(201).json(result.rows[0]);
     } catch (err) {
@@ -130,7 +192,7 @@ export async function updateProduct(req, res) {
 export async function getThreeProduct(req, res) {
     console.log(`GET /ThreeProduct request received`)
     try {
-        const strQry = `SELECT p.*,
+        const strQry = `SELECT p.*, '/products/' || p."pdId" || '/image' AS logosrc,
                         (   
                             SELECT row_to_json(brand_obj)
                             FROM ( SELECT "brandId", "brandName"
@@ -156,8 +218,9 @@ export async function getThreeProduct(req, res) {
 export async function getSearchProduct(req, res) {
     console.log(`GET / searchProduct id=${req.params.id} request received`)
     try {
+        const keyword = String(req.params.id).replace(/\s+/g, '');
         const result = await database.query({
-            text: `SELECT p.*,
+            text: `SELECT p.*, '/products/' || p."pdId" || '/image' AS logosrc,
             (   
                 SELECT row_to_json(brand_obj)
                 FROM ( SELECT "brandId", "brandName"
@@ -172,20 +235,20 @@ export async function getSearchProduct(req, res) {
         ) AS pdt
          FROM products p
          WHERE (
-                p."pdId"::text ILIKE $1
-                OR p."pdName" ILIKE $1
-                OR p."pdRemark" ILIKE $1
-              OR p."pdPrice"::text ILIKE $1
-                OR p."brandId" ILIKE $1
-                OR p."pdTypeId" ILIKE $1
+                                regexp_replace(p."pdId"::text, '\\s+', '', 'g') ILIKE $1
+                                OR regexp_replace(p."pdName", '\\s+', '', 'g') ILIKE $1
+                                OR regexp_replace(p."pdRemark", '\\s+', '', 'g') ILIKE $1
+                                OR regexp_replace(p."pdPrice"::text, '\\s+', '', 'g') ILIKE $1
+                                OR regexp_replace(p."brandId", '\\s+', '', 'g') ILIKE $1
+                                OR regexp_replace(p."pdTypeId", '\\s+', '', 'g') ILIKE $1
               OR EXISTS (
                   SELECT 1
                   FROM brands b
                   WHERE b."brandId" = p."brandId"
-                 AND b."brandName" ILIKE $1
+                                 AND regexp_replace(b."brandName", '\\s+', '', 'g') ILIKE $1
               )
          );`,
-            values: [`%${req.params.id}%`]
+                        values: [`%${keyword}%`]
         });
         res.status(200).json(result.rows);
     } catch (err) {

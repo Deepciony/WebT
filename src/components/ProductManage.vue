@@ -42,6 +42,12 @@
                     {{ t('manage.detail') }}
                     <textarea v-model.trim="form.pdRemark" rows="4" :placeholder="t('manage.detailPh')"></textarea>
                 </label>
+                <label class="image-field">
+                    {{ t('manage.image') }}
+                    <input type="file" accept="image/jpeg,image/png,image/webp" @change="selectImage">
+                    <small>{{ t('manage.imageHint') }}</small>
+                </label>
+                <img v-if="imagePreview" class="image-preview" :src="imagePreview" :alt="t('product.imgAlt')" @error="handlePreviewError">
                 <div class="form-actions">
                     <button class="manage-primary sk-btn" type="submit">{{ t(selectedId ? 'manage.saveEdit' : 'manage.add') }}</button>
                     <button class="manage-cancel sk-btn sk-btn-ghost" type="button" @click="resetForm">{{ t('manage.clear') }}</button>
@@ -77,6 +83,8 @@ const products = ref([])
 const selectedId = ref(null)
 const message = ref('')
 const messageType = ref('success')
+const imageFile = ref(null)
+const imagePreview = ref('')
 
 const emptyForm = () => ({
     pdName: '',
@@ -97,6 +105,8 @@ const loadProducts = async () => {
 const resetForm = () => {
     Object.assign(form, emptyForm())
     selectedId.value = null
+    imageFile.value = null
+    imagePreview.value = ''
     message.value = ''
 }
 
@@ -110,7 +120,31 @@ const editProduct = (product) => {
         brandName: product.brand?.brandName || '',
         pdTypeId: product.pdTypeId
     })
+    imageFile.value = null
+    imagePreview.value = product.logosrc
+        ? `http://localhost:3000${product.logosrc}?v=${Date.now()}`
+        : `http://localhost:3000/products/${product.pdId}/image?v=${Date.now()}`
     message.value = ''
+}
+
+const selectImage = (event) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    imageFile.value = file
+    imagePreview.value = URL.createObjectURL(file)
+}
+
+const handlePreviewError = (event) => {
+    if (!selectedId.value || event.target.dataset.fallback) {
+        imagePreview.value = ''
+        return
+    }
+    event.target.dataset.fallback = 'true'
+    const numericId = Number(selectedId.value)
+    const imageName = Number.isNaN(numericId)
+        ? `${selectedId.value}.jpg`
+        : `${String(numericId - 3).padStart(3, '0')}.jpg`
+    imagePreview.value = `http://localhost:3000/img_pd/${imageName}`
 }
 
 const saveProduct = async () => {
@@ -120,7 +154,13 @@ const saveProduct = async () => {
             : 'http://localhost:3000/products'
         const method = selectedId.value ? 'put' : 'post'
 
-        await axios({ method, url: endpoint, data: { ...form } })
+        const response = await axios({ method, url: endpoint, data: { ...form } })
+        const productId = selectedId.value || response.data.pdId
+        if (imageFile.value) {
+            const imageData = new FormData()
+            imageData.append('image', imageFile.value)
+            await axios.post(`http://localhost:3000/products/${productId}/image`, imageData)
+        }
         await loadProducts()
         const doneKey = selectedId.value ? 'manage.updated' : 'manage.added'
         resetForm()
@@ -154,6 +194,9 @@ onMounted(async () => {
 .form-heading small, .list-heading span { color: #88939d; font-size: 12px; font-weight: 400; }
 .manage-form label { display: block; margin-bottom: 16px; color: #39444d; font-size: 14px; font-weight: 700; }
 .manage-form input, .manage-form textarea { display: block; width: 100%; margin-top: 6px; padding: 10px 11px; color: #2c3e50; border: 1px solid #cfd7de; border-radius: 5px; outline: 0; font-size: 14px; }
+.image-field input { padding: 8px; }
+.image-field small { display: block; margin-top: 6px; color: #88939d; font-size: 12px; font-weight: 400; }
+.image-preview { display: block; width: 100%; height: 180px; margin: -4px 0 16px; object-fit: contain; background: #f2f5f8; border-radius: 8px; }
 .manage-form input:focus, .manage-form textarea:focus { border-color: #198754; box-shadow: 0 0 0 3px rgba(25, 135, 84, .12); }
 .form-two-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .form-actions { display: flex; gap: 10px; margin-top: 20px; }
