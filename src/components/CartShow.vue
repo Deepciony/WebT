@@ -37,7 +37,7 @@
                         </div>
                         <span v-else class="sk-mono cart-qty-fixed">×{{ item.qty }}</span>
                         <strong class="sk-mono">${{ (Number(item.price) * Number(item.qty)).toFixed(2) }}</strong>
-                        <button v-if="!cart.cartCf" class="remove-item" type="button" :disabled="busy" :aria-label="t('cart.remove', { name: item.pdName })" @click="removeItem(item)">×</button>
+                        <button v-if="!cart.cartCf" class="remove-item" type="button" :disabled="busy" :aria-label="t('cart.remove', { name: item.pdName })" @click="removeItem(item)"><i v-if="!isSky" class="bi bi-x-lg"></i><template v-else>×</template></button>
                     </article>
                 </div>
 
@@ -50,9 +50,11 @@
 
                     <template v-if="!cart.cartCf">
                         <button class="checkout-button sk-btn sk-btn-big sk-btn-block sk-btn-leaf" type="button" :disabled="busy" @click="confirmOrder">
+                            <i v-if="!isSky" class="bi bi-currency-dollar"></i>
                             {{ t('cartdb.confirm') }} <span>→</span>
                         </button>
                         <button class="delete-cart sk-btn sk-btn-block sk-btn-coral" type="button" :disabled="busy" @click="removeCart">
+                            <i v-if="!isSky" class="bi bi-cart-x-fill"></i>
                             {{ t('cartdb.delete') }}
                         </button>
                     </template>

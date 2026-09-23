@@ -8,7 +8,7 @@
             <span class="sk-pill">{{ product.brand?.brandName || t('product.noBrand') }}</span>
             <h3>{{ product.pdName }}</h3>
             <p v-if="product.pdRemark" class="product-remark">{{ product.pdRemark }}</p>
-            <router-link :to="`/productshow/${product.pdId}`" class="product-detail-link">{{ t('product.detail') }} →</router-link>
+            <router-link :to="{ name: 'ProductShow', params: { pdId: product.pdId } }" class="product-detail-link">{{ t('product.detail') }} →</router-link>
             <div class="product-foot">
                 <strong class="sk-mono">${{ Number(product.pdPrice).toFixed(2) }}</strong>
                 <button class="sk-btn" :class="{ 'sk-btn-leaf': added }" type="button" :disabled="busy" @click="add">

@@ -30,9 +30,11 @@
                         <td class="align-center sk-mono">{{ cart.sqty ?? 0 }}</td>
                         <td class="align-right sk-mono">${{ Number(cart.sprice ?? 0).toFixed(2) }}</td>
                         <td class="align-center">
-                            <span class="status" :class="cart.cartCf ? 'done' : 'open'">
+                            <span v-if="isSky" class="status" :class="cart.cartCf ? 'done' : 'open'">
                                 {{ cart.cartCf ? t('cartdb.confirmed') : t('cartdb.open') }}
                             </span>
+                            <i v-else class="bi" :class="cart.cartCf ? 'bi-check-lg text-success' : 'bi-dash'"
+                                :title="cart.cartCf ? t('cartdb.confirmed') : t('cartdb.open')"></i>
                         </td>
                     </tr>
                 </tbody>
@@ -52,6 +54,7 @@
 import { onMounted, ref } from 'vue'
 import axios from 'axios'
 import { t } from '../i18n.js'
+import { isSky } from '../stores/theme.js'
 
 const carts = ref([])
 const loading = ref(true)

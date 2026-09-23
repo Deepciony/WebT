@@ -26,12 +26,14 @@
                 </dl>
 
                 <div class="detail-actions">
-                    <button class="sk-btn sk-btn-big" type="button" :disabled="busy" @click="addToCart">
-                        <SkyIcon :name="added ? 'check' : 'cart'" :size="22" />
+                    <button class="sk-btn sk-btn-big btn btn-primary" type="button" :disabled="busy" @click="addToCart">
+                        <SkyIcon v-if="isSky" :name="added ? 'check' : 'cart'" :size="22" />
+                        <i v-else class="bi" :class="added ? 'bi-check-lg' : 'bi-cart'"></i>
                         {{ t(added ? 'product.added' : 'product.add') }}
                     </button>
-                    <router-link to="/manage" class="sk-btn sk-btn-big sk-btn-ghost">
-                        <SkyIcon name="pencil" :size="22" /> {{ t('manage.edit') }}
+                    <router-link to="/manage" class="sk-btn sk-btn-big sk-btn-ghost btn btn-warning">
+                        <SkyIcon v-if="isSky" name="pencil" :size="22" />
+                        <i v-else class="bi bi-pencil-fill"></i> {{ t('manage.edit') }}
                     </router-link>
                 </div>
 
@@ -48,6 +50,7 @@ import { useRoute } from 'vue-router'
 import axios from 'axios'
 import { useCartStore } from '../stores/cartStore.js'
 import { useAuthStore } from '../stores/authStore.js'
+import { isSky } from '../stores/theme.js'
 import { t } from '../i18n.js'
 import SkyIcon from './SkyIcon.vue'
 

@@ -61,8 +61,12 @@
                     <div class="card-body">
                         <h5 class="card-title">{{ pd.pdName }}</h5>
                         <p class="card-text">{{ pd.brand?.brandName || t('product.noBrand') }} - ${{ pd.pdPrice }}</p>
-                        <router-link :to="`/productshow/${pd.pdId}`" class="btn btn-outline-primary me-2">{{ t('product.detail') }}</router-link>
-                        <button class="btn btn-primary" type="button" @click="addProduct(pd)">{{ t('product.add') }}</button>
+                        <router-link :to="{ name: 'ProductShow', params: { pdId: pd.pdId } }" class="btn btn-outline-primary me-2">
+                            <i class="bi bi-search"></i> {{ t('product.detail') }}
+                        </router-link>
+                        <button class="btn btn-primary" type="button" @click="addProduct(pd)">
+                            <i class="bi bi-cart"></i> {{ t('product.add') }}
+                        </button>
                     </div>
                 </div>
             </div>
