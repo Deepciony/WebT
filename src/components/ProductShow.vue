@@ -88,7 +88,6 @@ const addToCart = async () => {
         await cartStore.addProduct(product.value)
         added.value = true
         message.value = ''
-        added.value = true
     } catch (err) {
         console.log(err.message)
         added.value = false
