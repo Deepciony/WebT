@@ -13,29 +13,40 @@ export async function postMember(req, res) {
     console.log(`POST /members is requested.`);
     const bodyData = req.body;
     try {
-        if (!bodyData.memEmail || !bodyData.memName || !bodyData.password) {
+        // Stored trimmed and lower case so "A@b.com" and "a@b.com" are one account
+        const memEmail = String(bodyData.memEmail || '').trim().toLowerCase();
+        const memName = String(bodyData.memName || '').trim();
+        const password = String(bodyData.password || '');
+
+        if (!memEmail || !memName || !password) {
             return res.json({ message: `ERROR memEmail, memName and password are required.`, regist: false });
         }
+        if (password.length < 6) {
+            return res.json({ message: `ERROR password must be at least 6 characters.`, regist: false });
+        }
+        if (memEmail.length > 100 || memName.length > 100) {
+            return res.json({ message: `ERROR memEmail and memName must be 100 characters or less.`, regist: false });
+        }
         const chkRow = await database.query({
-            text: `SELECT * FROM members WHERE "memEmail" = $1`,
-            values: [bodyData.memEmail]
+            text: `SELECT * FROM members WHERE LOWER("memEmail") = $1`,
+            values: [memEmail]
         });
         if (chkRow.rowCount != 0) {
-            return res.json({ message: `ERROR memEmail ${bodyData.memEmail} is exists.`, regist: false });
+            return res.json({ message: `ERROR memEmail ${memEmail} is exists.`, regist: false });
         }
 
         // Store only the bcrypt hash, never the password itself
         const saltround = 11;
-        const pwdHash = await bcrypt.hash(bodyData.password, saltround);
+        const pwdHash = await bcrypt.hash(password, saltround);
         await database.query({
             text: `INSERT INTO "members" ("memEmail", "memName", "memHash")
                    VALUES ($1, $2, $3)`,
-            values: [bodyData.memEmail, bodyData.memName, pwdHash]
+            values: [memEmail, memName, pwdHash]
         });
         // Echo back only public fields, not the password
         res.json({
-            memEmail: bodyData.memEmail,
-            memName: bodyData.memName,
+            memEmail,
+            memName,
             createDate: new Date(),
             message: "Regist Success",
             regist: true
@@ -50,12 +61,13 @@ export async function loginMember(req, res) {
     console.log(`POST /members/login is requested.`);
     const bodyData = req.body;
     try {
-        if (!bodyData.loginName || !bodyData.password) {
+        const loginName = String(bodyData.loginName || '').trim().toLowerCase();
+        if (!loginName || !bodyData.password) {
             return res.json({ message: `Login and Password is required`, login: false });
         }
         const result = await database.query({
-            text: `SELECT * FROM members WHERE "memEmail" = $1`,
-            values: [bodyData.loginName]
+            text: `SELECT * FROM members WHERE LOWER("memEmail") = $1`,
+            values: [loginName]
         });
         if (result.rowCount == 0) {
             return res.json({ message: `Login Fail`, login: false });
@@ -105,10 +117,7 @@ export async function getMember(req, res) {
 }
 
 export async function updateMember(req, res) {
-    const token = req.cookies.token;
-    if (!token) {
-        return res.status(401).json({ error: 'profile.notAuthenticated' });
-    }
+    // requireLogin already verified the token cookie and filled req.member
 
     const { memName, currentPassword, newPassword, confirmPassword } = req.body;
     const nextName = typeof memName === 'string' ? memName.trim() : '';
@@ -132,7 +141,7 @@ export async function updateMember(req, res) {
     }
 
     try {
-        const member = jwt.verify(token, process.env.SECRET_KEY);
+        const member = req.member;
         const result = await database.query({
             text: `SELECT "memEmail", "memHash", "dutyId"
                    FROM "members" WHERE "memEmail" = $1;`,

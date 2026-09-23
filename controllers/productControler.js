@@ -119,18 +119,31 @@ export async function getProductById(req, res) {
     }
 }
 
-export async function createProduct(req, res) {
-    const { pdName, pdPrice, pdRemark, brandId, brandName, pdTypeId } = req.body;
+// Ids are used as foreign keys, so they must match the brands row exactly
+const clean = (value) => String(value ?? '').trim();
+// An empty field must not read as free (Number('') is 0)
+const toPrice = (value) => (value === '' || value === null || value === undefined ? NaN : Number(value));
 
-    if (!pdName || pdPrice === undefined || !brandId || !brandName || !pdTypeId) {
+export async function createProduct(req, res) {
+    const pdName = clean(req.body.pdName);
+    const brandId = clean(req.body.brandId);
+    const brandName = clean(req.body.brandName);
+    const pdTypeId = clean(req.body.pdTypeId);
+    const pdRemark = clean(req.body.pdRemark);
+    const pdPrice = toPrice(req.body.pdPrice);
+
+    if (!pdName || !brandId || !brandName || !pdTypeId) {
         return res.status(400).json({ error: 'pdName, pdPrice, brandId, brandName and pdTypeId are required' });
+    }
+    if (!Number.isFinite(pdPrice) || pdPrice < 0) {
+        return res.status(400).json({ error: 'manage.priceInvalid' });
     }
 
     try {
         await database.query({
             text: `INSERT INTO brands ("brandId", "brandName") VALUES ($1, $2)
                    ON CONFLICT ("brandId") DO UPDATE SET "brandName" = EXCLUDED."brandName";`,
-            values: [brandId.trim(), brandName.trim()]
+            values: [brandId, brandName]
         });
         const nextIdResult = await database.query(`
             SELECT LPAD((COALESCE(MAX(CASE WHEN "pdId" ~ '^[0-9]+$'
@@ -142,29 +155,41 @@ export async function createProduct(req, res) {
             text: `INSERT INTO products ("pdId", "pdName", "pdPrice", "pdRemark", "brandId", "pdTypeId")
                    VALUES ($1, $2, $3, $4, $5, $6)
                    RETURNING *;`,
-            values: [nextProductId, pdName, pdPrice, pdRemark || '', brandId, pdTypeId]
+            values: [nextProductId, pdName, pdPrice, pdRemark, brandId, pdTypeId]
         });
         res.status(201).json(result.rows[0]);
     } catch (err) {
+        // 23505 = two products created at the same moment picked the same id
+        if (err.code === '23505') {
+            return res.status(409).json({ error: 'manage.saveRetry' });
+        }
         console.error(err);
         res.status(500).json({ error: 'Internal server error' });
     }
 }
 
 export async function updateProduct(req, res) {
-    const { pdName, pdPrice, pdRemark, brandId, brandName, pdTypeId } = req.body;
+    const pdName = clean(req.body.pdName);
+    const brandId = clean(req.body.brandId);
+    const brandName = clean(req.body.brandName);
+    const pdTypeId = clean(req.body.pdTypeId);
+    const pdRemark = clean(req.body.pdRemark);
+    const pdPrice = toPrice(req.body.pdPrice);
     const productId = req.params.id;
     const normalizedProductId = productId.replace(/^0+/, '') || '0';
 
-    if (!pdName || pdPrice === undefined || !brandId || !brandName || !pdTypeId) {
+    if (!pdName || !brandId || !brandName || !pdTypeId) {
         return res.status(400).json({ error: 'pdName, pdPrice, brandId, brandName and pdTypeId are required' });
+    }
+    if (!Number.isFinite(pdPrice) || pdPrice < 0) {
+        return res.status(400).json({ error: 'manage.priceInvalid' });
     }
 
     try {
         await database.query({
             text: `INSERT INTO brands ("brandId", "brandName") VALUES ($1, $2)
                    ON CONFLICT ("brandId") DO UPDATE SET "brandName" = EXCLUDED."brandName";`,
-            values: [brandId.trim(), brandName.trim()]
+            values: [brandId, brandName]
         });
         const result = await database.query({
             text: `UPDATE products
@@ -175,7 +200,7 @@ export async function updateProduct(req, res) {
                        "pdTypeId" = $5
                      WHERE "pdId"::text = $6 OR "pdId"::text = $7
                    RETURNING *;`,
-                 values: [pdName, pdPrice, pdRemark || '', brandId, pdTypeId, productId, normalizedProductId]
+                 values: [pdName, pdPrice, pdRemark, brandId, pdTypeId, productId, normalizedProductId]
         });
 
         if (result.rowCount === 0) {

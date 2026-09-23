@@ -185,6 +185,8 @@ const messages = {
         'manage.updated': 'Product updated',
         'manage.added': 'Product added',
         'manage.saveFail': "Couldn't save the product",
+        'manage.priceInvalid': 'Price must be a number, zero or more',
+        'manage.saveRetry': 'Someone saved at the same time. Please try again.',
         'manage.loadFail': "Couldn't load products",
 
         'db.kicker': 'SYSTEM DATABASE',
@@ -390,6 +392,8 @@ const messages = {
         'manage.updated': 'แก้ไขข้อมูลเรียบร้อยแล้ว',
         'manage.added': 'เพิ่มสินค้าเรียบร้อยแล้ว',
         'manage.saveFail': 'ไม่สามารถบันทึกข้อมูลได้',
+        'manage.priceInvalid': 'ราคาต้องเป็นตัวเลขตั้งแต่ 0 ขึ้นไป',
+        'manage.saveRetry': 'มีคนบันทึกพร้อมกัน ลองใหม่อีกครั้ง',
         'manage.loadFail': 'ไม่สามารถโหลดข้อมูลสินค้าได้',
 
         'db.kicker': 'ฐานข้อมูลระบบ',
@@ -421,7 +425,9 @@ const serverMessages = {
         'Server error': "Couldn't reach the server. Please try again.",
         'Login and Password is required': 'Please enter your email and password',
         'Regist Success': 'Account created. You can sign in now.',
-        'ERROR memEmail, memName and password are required.': 'Please fill in email, name and password'
+        'ERROR memEmail, memName and password are required.': 'Please fill in email, name and password',
+        'ERROR password must be at least 6 characters.': 'Password must be at least 6 characters',
+        'ERROR memEmail and memName must be 100 characters or less.': 'Email and name must be 100 characters or less'
     },
     th: {
         'Login Success': 'เข้าระบบสำเร็จ',
@@ -429,7 +435,9 @@ const serverMessages = {
         'Server error': 'เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ ลองใหม่อีกครั้ง',
         'Login and Password is required': 'กรุณากรอกอีเมลและรหัสผ่าน',
         'Regist Success': 'ลงทะเบียนสำเร็จ เข้าสู่ระบบได้เลย',
-        'ERROR memEmail, memName and password are required.': 'กรุณากรอกอีเมล ชื่อ และรหัสผ่าน'
+        'ERROR memEmail, memName and password are required.': 'กรุณากรอกอีเมล ชื่อ และรหัสผ่าน',
+        'ERROR password must be at least 6 characters.': 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร',
+        'ERROR memEmail and memName must be 100 characters or less.': 'อีเมลและชื่อต้องยาวไม่เกิน 100 ตัวอักษร'
     }
 }
 const serverPatterns = {

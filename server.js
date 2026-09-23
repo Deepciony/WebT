@@ -3,7 +3,6 @@ import cors from "cors";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import productRoutes from "./src/router/productRoute.js";
-import authRoutes from "./src/router/authRoute.js";
 import databaseRoutes from "./src/router/databaseRoute.js";
 import memberRoutes from "./src/router/memberRoute.js";
 import cartRoutes from "./src/router/cartRoute.js";
@@ -28,7 +27,6 @@ app.use("/img_pd", express.static("img_pd"));
 // Must run before the routers so req.cookies is filled in
 app.use(cookieParser());
 app.use(productRoutes);
-app.use(authRoutes);
 app.use(databaseRoutes);
 app.use(memberRoutes);
 app.use(cartRoutes);
