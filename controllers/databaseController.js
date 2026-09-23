@@ -1,22 +1,18 @@
 import database from "../database.js";
-import jwt from "jsonwebtoken";
 
 const tables = ["products", "brands", "members", "pdTypes"];
 
 export async function deleteMember(req, res) {
-    const token = req.cookies.token;
-    if (!token) {
-        return res.status(401).json({ error: 'profile.notAuthenticated' });
-    }
-    try {
-        jwt.verify(token, process.env.SECRET_KEY);
-    } catch (err) {
-        return res.status(401).json({ error: 'profile.notAuthenticated' });
-    }
-
+    // requireLogin already verified the token cookie and filled req.member
     const memEmail = typeof req.params.memEmail === 'string' ? req.params.memEmail.trim() : '';
     if (!memEmail) {
         return res.status(400).json({ error: 'db.memberEmailRequired' });
+    }
+
+    // Without this any signed-in member could delete anyone else
+    const isAdmin = req.member?.dutyId === 'admin';
+    if (!isAdmin && req.member?.memEmail !== memEmail) {
+        return res.status(403).json({ error: 'db.deleteMemberNotAllowed' });
     }
 
     try {

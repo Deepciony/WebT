@@ -39,7 +39,7 @@
                             <tr v-for="(row, index) in table.rows" :key="index">
                                 <td v-for="key in rowKeys(row)" :key="key">{{ formatValue(row[key]) }}</td>
                                 <td v-if="table.name === 'members'">
-                                    <button class="delete-member" type="button" @click="deleteMember(row.memEmail)">
+                                    <button v-if="canDelete(row.memEmail)" class="delete-member" type="button" @click="deleteMember(row.memEmail)">
                                         {{ t('db.delete') }}
                                     </button>
                                 </td>
@@ -58,6 +58,12 @@
 import { onMounted, ref } from 'vue'
 import axios from 'axios'
 import { t } from '../i18n.js'
+import { useAuthStore } from '../stores/authStore.js'
+
+const authStore = useAuthStore()
+
+// Admins may remove anyone; everyone else only their own account
+const canDelete = (memEmail) => authStore.member?.dutyId === 'admin' || authStore.member?.memEmail === memEmail
 
 const tables = ref([])
 const loading = ref(true)

@@ -202,6 +202,8 @@ const messages = {
         'db.deleteMemberFail': 'Could not delete member.',
         'db.empty': 'This table has no data yet',
         'db.noTables': 'No tables found',
+        'auth.loginRequired': 'Please sign in first',
+        'db.deleteMemberNotAllowed': 'Only an admin can delete another member',
         'db.loadFail': "Couldn't load the database overview"
     },
     th: {
@@ -405,6 +407,8 @@ const messages = {
         'db.deleteMemberFail': 'ไม่สามารถลบสมาชิกได้',
         'db.empty': 'ยังไม่มีข้อมูลในตารางนี้',
         'db.noTables': 'ไม่พบตารางข้อมูลที่ระบบกำหนดไว้',
+        'auth.loginRequired': 'กรุณาเข้าสู่ระบบก่อน',
+        'db.deleteMemberNotAllowed': 'ลบสมาชิกคนอื่นได้เฉพาะผู้ดูแลระบบ',
         'db.loadFail': 'ไม่สามารถโหลดข้อมูลฐานข้อมูลได้'
     }
 }
