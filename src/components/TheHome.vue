@@ -9,8 +9,8 @@
                     <router-link to="/product" class="sk-btn sk-btn-big">
                         {{ t('home.browse') }} <SkyIcon name="arrow" />
                     </router-link>
-                    <router-link to="/cart" class="sk-btn sk-btn-big sk-btn-ghost">
-                        <SkyIcon name="cart" /> {{ t('home.cart', { n: cartCount }) }}
+                    <router-link :to="cartStore.cartId ? `/cartshow/${cartStore.cartId}` : '/cartlist'" class="sk-btn sk-btn-big sk-btn-ghost">
+                        <SkyIcon name="cart" /> {{ t('home.cart', { n: cartStore.theQty }) }}
                     </router-link>
                 </div>
             </div>
@@ -61,6 +61,7 @@
                     <div class="card-body">
                         <h5 class="card-title">{{ pd.pdName }}</h5>
                         <p class="card-text">{{ pd.brand?.brandName || t('product.noBrand') }} - ${{ pd.pdPrice }}</p>
+                        <router-link :to="`/productshow/${pd.pdId}`" class="btn btn-outline-primary me-2">{{ t('product.detail') }}</router-link>
                         <button class="btn btn-primary" type="button" @click="addProduct(pd)">{{ t('product.add') }}</button>
                     </div>
                 </div>
@@ -72,7 +73,8 @@
 <script setup>
     import { onMounted, ref } from 'vue';
     import axios from 'axios';
-    import { addToCart, cartCount } from '../stores/cart.js';
+    import { useCartStore } from '../stores/cartStore.js';
+    import { useAuthStore } from '../stores/authStore.js';
     import { isSky } from '../stores/theme.js';
     import { t } from '../i18n.js';
     import ProductCard from './ProductCard.vue';
@@ -81,7 +83,17 @@
     const product = ref([])
     const loading = ref(true)
     const error = ref(false)
-    const addProduct = (pd) => addToCart(pd)
+    const cartStore = useCartStore()
+    const authStore = useAuthStore()
+    const addProduct = async (pd) => {
+        if (!authStore.isLogin) return window.alert(t('product.loginFirst'))
+        try {
+            await cartStore.addProduct(pd)
+        } catch (err) {
+            console.log(err.message)
+            window.alert(t('product.addFail'))
+        }
+    }
 
     const points = [
         { icon: 'truck', title: 'home.p1', text: 'home.p1Text', tone: 'leaf' },

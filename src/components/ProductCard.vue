@@ -8,9 +8,10 @@
             <span class="sk-pill">{{ product.brand?.brandName || t('product.noBrand') }}</span>
             <h3>{{ product.pdName }}</h3>
             <p v-if="product.pdRemark" class="product-remark">{{ product.pdRemark }}</p>
+            <router-link :to="`/productshow/${product.pdId}`" class="product-detail-link">{{ t('product.detail') }} →</router-link>
             <div class="product-foot">
                 <strong class="sk-mono">${{ Number(product.pdPrice).toFixed(2) }}</strong>
-                <button class="sk-btn" :class="{ 'sk-btn-leaf': added }" type="button" @click="add">
+                <button class="sk-btn" :class="{ 'sk-btn-leaf': added }" type="button" :disabled="busy" @click="add">
                     <SkyIcon :name="added ? 'check' : 'cart'" :size="22" />
                     <span>{{ t(added ? 'product.added' : 'product.add') }}</span>
                 </button>
@@ -23,18 +24,34 @@
 <script setup>
 import { ref } from 'vue'
 import SkyIcon from './SkyIcon.vue'
-import { addToCart } from '../stores/cart.js'
+import { useCartStore } from '../stores/cartStore.js'
+import { useAuthStore } from '../stores/authStore.js'
 import { t } from '../i18n.js'
 
 const props = defineProps({ product: { type: Object, required: true } })
+const cartStore = useCartStore()
+const authStore = useAuthStore()
 const added = ref(false)
+const busy = ref(false)
 let timer
 
-const add = () => {
-    addToCart(props.product)
-    added.value = true
-    clearTimeout(timer)
-    timer = setTimeout(() => { added.value = false }, 1600)
+const add = async () => {
+    if (!authStore.isLogin) {
+        window.alert(t('product.loginFirst'))
+        return
+    }
+    busy.value = true
+    try {
+        await cartStore.addProduct(props.product)
+        added.value = true
+        clearTimeout(timer)
+        timer = setTimeout(() => { added.value = false }, 1600)
+    } catch (err) {
+        console.log(err.message)
+        window.alert(t('product.addFail'))
+    } finally {
+        busy.value = false
+    }
 }
 </script>
 
@@ -45,6 +62,8 @@ const add = () => {
 .product-body { display: flex; flex: 1; flex-direction: column; align-items: flex-start; gap: 8px; padding: 20px 24px 24px; }
 .product-body h3 { margin: 4px 0 0; font-family: var(--font-body); font-size: 20px; font-weight: 700; line-height: 1.35; }
 .product-remark { display: -webkit-box; overflow: hidden; margin: 0; color: var(--ink-muted); font-size: 16px; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.product-detail-link { color: var(--sky-deep, #198754); font-size: 15px; font-weight: 700; text-decoration: none; }
+.product-detail-link:hover { text-decoration: underline; }
 .product-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; width: 100%; margin-top: auto; padding-top: 16px; }
 .product-foot strong { font-size: 24px; }
 .product-foot .sk-btn { padding: 0 20px; }

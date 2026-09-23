@@ -6,7 +6,9 @@ import TheRegister from '../components/TheRegister.vue';
 import PageMember from '../components/PageMember.vue';
 import ProductManage from '../components/ProductManage.vue';
 import DatabaseOverview from '../components/DatabaseOverview.vue';
-import CartPage from '../components/CartPage.vue';
+import ProductShow from '../components/ProductShow.vue';
+import CartShow from '../components/CartShow.vue';
+import CartList from '../components/CartList.vue';
 import { useAuthStore } from '../stores/authStore.js';
 
 const routes = [
@@ -45,10 +47,27 @@ const routes = [
         meta: { requiresAuth: true },
     },
     {
-        path: '/cart',
-        name: 'Cart',
-        component: CartPage,
+        // The route carries the product id, so the path must name it too
+        path: '/productshow/:pdId',
+        name: 'ProductShow',
+        component: ProductShow,
         meta: { requiresAuth: true },
+    },
+    {
+        path: '/cartshow/:cartId',
+        name: 'CartShow',
+        component: CartShow,
+        meta: { requiresAuth: true },
+    },
+    {
+        path: '/cartlist',
+        name: 'CartList',
+        component: CartList,
+        meta: { requiresAuth: true },
+    },
+    {
+        path: '/cart',
+        redirect: '/cartlist',
     },
     {
         path: '/login',

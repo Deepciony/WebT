@@ -6,6 +6,7 @@ import productRoutes from "./src/router/productRoute.js";
 import authRoutes from "./src/router/authRoute.js";
 import databaseRoutes from "./src/router/databaseRoute.js";
 import memberRoutes from "./src/router/memberRoute.js";
+import cartRoutes from "./src/router/cartRoute.js";
 
 dotenv.config();
 
@@ -30,6 +31,7 @@ app.use(productRoutes);
 app.use(authRoutes);
 app.use(databaseRoutes);
 app.use(memberRoutes);
+app.use(cartRoutes);
 
 app.listen(PORT, () => {
     console.log(`API server is running at http://localhost:${PORT}`);

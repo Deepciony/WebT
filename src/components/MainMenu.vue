@@ -17,11 +17,7 @@
       </nav>
 
       <AppSwitches class="sky-actions" />
-      <router-link v-if="authStore.isLogin" to="/cart" class="sky-cart" :aria-label="t('nav.cartAria', { n: cartCount })">
-        <SkyIcon name="cart" :size="24" />
-        <span class="sky-cart-label">{{ t('nav.cart') }}</span>
-        <span class="sky-cart-badge sk-mono">{{ cartCount }}</span>
-      </router-link>
+      <CartInfo v-if="authStore.isLogin" class="sky-cart" />
       <button v-if="authStore.isLogin" class="sky-logout" type="button" :aria-label="t('profile.logout')" :title="t('profile.logout')" @click="memLogout">
         <SkyIcon name="logout" :size="24" />
       </button>
@@ -52,7 +48,7 @@
             <router-link to="/database"><div class="nav-link">{{ t('nav.database') }}</div></router-link>
           </li>
           <li v-if="authStore.isLogin" class="nav-item">
-            <router-link to="/cart"><div class="nav-link">{{ t('nav.cart') }} <span class="cart-badge">{{ cartCount }}</span></div></router-link>
+            <CartInfo />
           </li>
           <li v-if="authStore.isLogin" class="nav-item">
             <router-link to="/pagemember" style="text-decoration: none"><div class="nav-link fw-bold">{{ memName }}</div></router-link>
@@ -72,12 +68,12 @@
 <script setup>
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { cartCount } from '../stores/cart.js'
 import { isSky } from '../stores/theme.js'
 import { useAuthStore } from '../stores/authStore.js'
 import { t } from '../i18n.js'
 import SkyIcon from './SkyIcon.vue'
 import AppSwitches from './AppSwitches.vue'
+import CartInfo from './CartInfo.vue'
 
 const authStore = useAuthStore()
 const router = useRouter()
@@ -93,7 +89,8 @@ const links = [
   { to: '/product', label: 'nav.products', icon: 'shop' },
   { to: '/login', label: 'nav.login', icon: 'login', guest: true },
   { to: '/manage', label: 'nav.manage', icon: 'pencil', member: true },
-  { to: '/database', label: 'nav.database', icon: 'database', member: true }
+  { to: '/database', label: 'nav.database', icon: 'database', member: true },
+  { to: '/cartlist', label: 'nav.orders', icon: 'shop', member: true }
 ]
 
 const visibleLinks = computed(() => links.filter((link) =>
