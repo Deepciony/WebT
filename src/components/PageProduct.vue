@@ -6,9 +6,8 @@
                 <h1>{{ t('shop.title') }}</h1>
                 <p>{{ t('shop.lead') }}</p>
             </div>
-            <form class="search sk-form" role="search" @submit.prevent="searchProducts">
+            <form class="search" role="search" @submit.prevent="searchProducts">
                 <label class="search-field">
-                    <span class="visually-hidden">{{ t('shop.searchLabel') }}</span>
                     <SkyIcon name="search" class="search-icon" />
                     <input v-model="stext" type="search" :placeholder="t('shop.placeholder')">
                 </label>
@@ -133,10 +132,81 @@
 <style scoped>
 .shop-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 24px; }
 .shop-head .sk-head { margin-bottom: 0; }
-.search { display: flex; flex: 1 1 420px; gap: 12px; max-width: 560px; }
-.search-field { position: relative; flex: 1; margin: 0 !important; }
-.search-field input { margin: 0 !important; padding-left: 52px !important; }
-.search-icon { position: absolute; top: 50%; left: 18px; color: var(--ink-subtle); transform: translateY(-50%); pointer-events: none; }
+.search {
+    --search-height: 40px;
+    display: flex;
+    flex: 0 1 700px;
+    align-items: center;
+    gap: 14px;
+    max-width: 700px;
+    width: 100%;
+    margin: 0;
+}
+.search-field {
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+    width: auto;
+    height: var(--search-height);
+    margin: 0;
+    padding: 0 12px 0 38px;
+    background: #fff;
+    border: 1px solid rgba(15, 23, 42, .2);
+    border-radius: 12px !important;
+    box-sizing: border-box;
+}
+.search-field:focus-within {
+    border-color: var(--sky-deep);
+    box-shadow: 0 0 0 3px var(--sky-soft);
+}
+.search-icon {
+    position: absolute;
+    top: 50%;
+    left: 12px;
+    width: 16px;
+    height: 16px;
+    color: var(--ink-subtle);
+    transform: translateY(-50%);
+    pointer-events: none;
+}
+.search-field input {
+    display: block;
+    width: 100%;
+    height: 38px;
+    margin: 0;
+    padding: 0;
+    color: var(--ink);
+    background: transparent;
+    border: 0;
+    outline: 0;
+    font-family: var(--font-body);
+    font-size: 14px;
+}
+.search-field input::placeholder { color: rgba(71, 85, 105, .75); }
+.search-field input:focus,
+.search-field input:focus-visible { outline: none !important; box-shadow: none; }
+.search .sk-btn {
+    flex: none;
+    width: auto;
+    min-width: 96px;
+    min-height: var(--search-height) !important;
+    height: var(--search-height) !important;
+    padding: 0 16px;
+    color: #fff;
+    background: var(--sky);
+    border: 0;
+    border-radius: 12px !important;
+    box-sizing: border-box;
+    font-size: 14px;
+    font-weight: 700;
+    box-shadow: 0 5px 10px rgba(8, 127, 115, .14);
+}
+.search .sk-btn:hover,
+.search .sk-btn:focus-visible {
+    color: #fff;
+    background: var(--sky-deep);
+    border-color: var(--sky-deep);
+}
 .result-count { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 0 0 24px; color: var(--ink-muted); }
 .result-count strong { color: var(--ink); }
 .clear-search { min-height: 44px; padding: 0 12px; color: var(--sky-deep); background: none; border: 0; border-radius: 12px; cursor: pointer; font-weight: 700; text-decoration: underline; }
@@ -145,7 +215,10 @@
 .skeleton-card { height: 440px; border-radius: var(--r-card); }
 
 @media (max-width: 640px) {
-    .search { flex-basis: 100%; }
+    .search { flex-direction: column; align-items: stretch; max-width: 100%; }
+    .search-field { width: 100%; flex-basis: var(--search-height); }
+    .search .sk-btn { width: 100%; min-width: 0; }
+    .search .sk-btn { width: 100%; }
     .product-grid { gap: 20px; }
 }
 </style>
