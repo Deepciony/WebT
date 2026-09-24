@@ -8,6 +8,7 @@
         </form>
 
         <p v-if="message" class="auth-message sk-msg" role="status" :class="{ error: !login }">{{ t(message) }}</p>
+        <router-link to="/" class="auth-home-link">{{ t('auth.home') }}</router-link>
         <router-link to="/register" class="auth-switch-link">{{ t('auth.toRegister') }}</router-link>
         <DevBypass v-if="DevBypass" />
     </AuthLayout>
@@ -15,7 +16,7 @@
 
 <script setup>
 import { defineAsyncComponent, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import { useAuthStore } from '../stores/authStore.js'
 import { t } from '../i18n.js'
@@ -25,6 +26,7 @@ const DevBypass = import.meta.env.DEV ? defineAsyncComponent(() => import('./Dev
 
 const authStore = useAuthStore()
 const router = useRouter()
+const route = useRoute()
 const loginName = ref('')
 const password = ref('')
 const login = ref(false)
@@ -43,7 +45,7 @@ const handleSubmit = async () => {
         if (login.value) {
             authStore.login()
             await authStore.getMember()
-            router.push('/pagemember')
+            router.push(typeof route.query.redirect === 'string' ? route.query.redirect : '/pagemember')
         }
     } catch (err) {
         console.log(err)

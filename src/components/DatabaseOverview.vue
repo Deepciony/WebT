@@ -51,6 +51,17 @@
             </article>
             <p v-if="!tables.length" class="empty-table">{{ t('db.noTables') }}</p>
         </div>
+
+        <div v-if="confirmState.open" class="confirm-overlay" @click.self="closeConfirm">
+            <div class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="database-confirm-title">
+                <h2 id="database-confirm-title">{{ t('db.confirmTitle') }}</h2>
+                <p>{{ confirmState.message }}</p>
+                <div class="confirm-actions">
+                    <button class="sk-btn sk-btn-ghost" type="button" @click="closeConfirm">{{ t('db.cancel') }}</button>
+                    <button class="sk-btn sk-btn-coral" type="button" @click="runConfirm">{{ t('db.delete') }}</button>
+                </div>
+            </div>
+        </div>
     </section>
 </template>
 
@@ -69,6 +80,7 @@ const canDeleteCart = (row) => authStore.member?.dutyId === 'admin' || authStore
 const tables = ref([])
 const loading = ref(true)
 const error = ref('')
+const confirmState = ref({ open: false, message: '', action: null })
 
 const loadOverview = async () => {
     loading.value = true
@@ -86,27 +98,45 @@ const loadOverview = async () => {
 const rowKeys = (row) => Object.keys(row)
 const formatValue = (value) => value === null || value === undefined ? '-' : value
 
-const deleteMember = async (memEmail) => {
-    if (!window.confirm(t('db.confirmDelete', { email: memEmail }))) return
+const closeConfirm = () => {
+    confirmState.value = { open: false, message: '', action: null }
+}
 
-    error.value = ''
-    try {
-        await axios.delete(`http://localhost:3000/database/members/${encodeURIComponent(memEmail)}`)
-        await loadOverview()
-    } catch (requestError) {
-        error.value = requestError.response?.data?.error || 'db.deleteMemberFail'
+const runConfirm = async () => {
+    const action = confirmState.value.action
+    closeConfirm()
+    if (action) await action()
+}
+
+const deleteMember = async (memEmail) => {
+    confirmState.value = {
+        open: true,
+        message: t('db.confirmDelete', { email: memEmail }),
+        action: async () => {
+            error.value = ''
+            try {
+                await axios.delete(`http://localhost:3000/database/members/${encodeURIComponent(memEmail)}`)
+                await loadOverview()
+            } catch (requestError) {
+                error.value = requestError.response?.data?.error || 'db.deleteMemberFail'
+            }
+        }
     }
 }
 
 const deleteCart = async (cartId) => {
-    if (!window.confirm(`Delete order history ${cartId}?`)) return
-
-    error.value = ''
-    try {
-        await axios.delete(`http://localhost:3000/database/carts/${encodeURIComponent(cartId)}`)
-        await loadOverview()
-    } catch (requestError) {
-        error.value = requestError.response?.data?.error || 'db.deleteCartFail'
+    confirmState.value = {
+        open: true,
+        message: t('db.confirmDeleteCart', { id: cartId }),
+        action: async () => {
+            error.value = ''
+            try {
+                await axios.delete(`http://localhost:3000/database/carts/${encodeURIComponent(cartId)}`)
+                await loadOverview()
+            } catch (requestError) {
+                error.value = requestError.response?.data?.error || 'db.deleteCartFail'
+            }
+        }
     }
 }
 
@@ -139,6 +169,12 @@ td { color: #33434c; }
 .delete-member:hover { color: #fff; background: #c0392b; }
 .empty-table, .database-loading, .database-error { padding: 22px; color: #71808a; text-align: center; }
 .database-error { color: #c0392b; }
+.confirm-overlay { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; background: rgba(15, 23, 42, .5); }
+.confirm-dialog { width: min(420px, calc(100vw - 32px)); padding: 24px; color: var(--ink); background: var(--surface); border: 1px solid var(--outline); border-radius: var(--r-card); box-shadow: var(--shadow-active); }
+.confirm-dialog h2 { margin: 0 0 8px; font-size: 22px; }
+.confirm-dialog p { margin: 0 0 22px; color: var(--ink-muted); }
+.confirm-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.confirm-actions .sk-btn { min-width: 90px; }
 @media (max-width: 800px) { .database-heading { align-items: start; flex-direction: column; } }
 
 /* Skylearn: denser "parent view" styling for data */

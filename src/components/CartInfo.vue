@@ -9,27 +9,19 @@
 </template>
 
 <script setup>
-import { computed, onMounted, watch } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useCartStore } from '../stores/cartStore.js'
-import { useAuthStore } from '../stores/authStore.js'
 import { isSky } from '../stores/theme.js'
 import { t } from '../i18n.js'
 import SkyIcon from './SkyIcon.vue'
 
 const cartStore = useCartStore()
-const authStore = useAuthStore()
 
 // No open cart yet? send them to the order history instead of a dead link
 const target = computed(() => cartStore.cartId ? `/cartshow/${cartStore.cartId}` : '/cartlist')
 
-// Re-read the cart after a sign-in or sign-out
-watch(() => authStore.isLogin, (isLogin) => {
-    if (isLogin) cartStore.refresh()
-    else cartStore.reset()
-})
-
 onMounted(() => {
-    if (authStore.isLogin) cartStore.refresh()
+    cartStore.refresh()
 })
 </script>
 

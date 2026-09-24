@@ -70,6 +70,8 @@ defineProps({
 :root[data-theme="sky"] .auth-card :slotted(.auth-submit) { justify-content: center; margin-top: 8px; }
 :root[data-theme="sky"] .auth-card :slotted(.auth-switch-link) { display: flex; align-items: center; justify-content: center; min-height: 56px; margin-top: 12px; color: var(--sky-deep); border-radius: var(--r-btn); font-size: 16px; }
 :root[data-theme="sky"] .auth-card :slotted(.auth-switch-link:hover) { background: var(--sky-soft); }
+:root[data-theme="sky"] .auth-card :slotted(.auth-home-link) { display: flex; align-items: center; justify-content: center; min-height: 44px; margin-top: 8px; color: var(--ink-muted); border-radius: var(--r-btn); font-size: 15px; text-decoration: none; }
+:root[data-theme="sky"] .auth-card :slotted(.auth-home-link:hover) { color: var(--sky-deep); background: var(--sunken); }
 @media (max-width: 480px) {
     :root[data-theme="sky"] .auth-page { place-content: start stretch; padding: 88px 16px 24px; }
     :root[data-theme="sky"] .auth-switches { top: 16px; right: 16px; }

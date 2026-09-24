@@ -21,6 +21,7 @@ const messages = {
 
         'store.name': 'Kasetsart University Sriracha store',
         'common.retry': 'Try again',
+        'common.close': 'Close',
         'common.loadFail': "Couldn't load products",
         'common.loadFailText': "We couldn't reach the data server. Please try again.",
         'common.items': '{n} items',
@@ -52,6 +53,7 @@ const messages = {
         'product.detail': 'View details',
         'product.loginFirst': 'Please sign in before adding products to your cart',
         'product.addFail': "Couldn't add the product to your cart",
+        'product.addFailTitle': 'Could not add product',
         
         'detail.id': 'Product ID',
         'detail.kicker': 'PRODUCT DETAIL',
@@ -77,6 +79,12 @@ const messages = {
         'cartdb.done': 'Order received. Thank you for shopping at KUSHOP!',
         'cartdb.actionFail': "Couldn't finish that. Please try again.",
         'cartdb.viewOrders': 'My orders',
+        'cartdb.guestTitle': 'Your cart is ready',
+        'cartdb.guestText': 'Sign in before placing your order. Your items will stay in this cart.',
+        'cartdb.guestPlace': 'Place order',
+        'cartdb.loginRequiredTitle': 'Sign in to place your order',
+        'cartdb.loginRequiredText': 'Please sign in first. Your cart items will be kept.',
+        'cartdb.login': 'Sign in',
         
         'orders.kicker': 'MY ORDERS',
         'orders.title': 'Order history',
@@ -123,6 +131,7 @@ const messages = {
         'auth.password': 'Password',
         'auth.submitLogin': 'Sign in',
         'auth.loginFail': 'Sign-in failed',
+        'auth.home': 'Back to Home',
         'auth.bypass': 'Skip sign-in (test mode)',
         'auth.toRegister': 'New here? Create an account',
 
@@ -199,6 +208,9 @@ const messages = {
         'db.actions': 'Actions',
         'db.delete': 'Delete',
         'db.confirmDelete': 'Delete member {email}?',
+        'db.confirmTitle': 'Confirm deletion',
+        'db.confirmDeleteCart': 'Delete order history {id}?',
+        'db.cancel': 'Cancel',
         'db.memberEmailRequired': 'Member email is required.',
         'db.memberNotFound': 'Member not found.',
         'db.deleteMemberFail': 'Could not delete member.',
@@ -232,6 +244,7 @@ const messages = {
 
         'store.name': 'ร้านค้าประจำ ม.เกษตรศาสตร์ ศรีราชา',
         'common.retry': 'ลองอีกครั้ง',
+        'common.close': 'ปิด',
         'common.loadFail': 'ยังโหลดสินค้าไม่ได้',
         'common.loadFailText': 'ระบบเชื่อมต่อข้อมูลไม่สำเร็จ ลองใหม่อีกครั้งนะ',
         'common.items': '{n} รายการ',
@@ -263,6 +276,7 @@ const messages = {
         'product.detail': 'ดูรายละเอียด',
         'product.loginFirst': 'ต้องเข้าสู่ระบบก่อนใส่สินค้าลงตะกร้า',
         'product.addFail': 'ใส่สินค้าลงตะกร้าไม่สำเร็จ',
+        'product.addFailTitle': 'เพิ่มสินค้าไม่สำเร็จ',
         
         'detail.id': 'รหัสสินค้า',
         'detail.kicker': 'รายละเอียดสินค้า',
@@ -288,6 +302,12 @@ const messages = {
         'cartdb.done': 'รับคำสั่งซื้อเรียบร้อยแล้ว ขอบคุณที่ใช้บริการ KUSHOP',
         'cartdb.actionFail': 'ทำรายการไม่สำเร็จ ลองใหม่อีกครั้ง',
         'cartdb.viewOrders': 'รายการสั่งซื้อของฉัน',
+        'cartdb.guestTitle': 'ตะกร้าของคุณพร้อมแล้ว',
+        'cartdb.guestText': 'เข้าสู่ระบบก่อนยืนยันการสั่งซื้อ สินค้าในตะกร้าจะยังอยู่ครบ',
+        'cartdb.guestPlace': 'สั่งซื้อสินค้า',
+        'cartdb.loginRequiredTitle': 'เข้าสู่ระบบเพื่อสั่งซื้อ',
+        'cartdb.loginRequiredText': 'กรุณาเข้าสู่ระบบก่อน สินค้าในตะกร้าจะยังคงอยู่',
+        'cartdb.login': 'เข้าสู่ระบบ',
         
         'orders.kicker': 'รายการสั่งซื้อ',
         'orders.title': 'ประวัติการสั่งซื้อ',
@@ -334,6 +354,7 @@ const messages = {
         'auth.password': 'รหัสผ่าน',
         'auth.submitLogin': 'เข้าสู่ระบบ',
         'auth.loginFail': 'เข้าสู่ระบบไม่สำเร็จ',
+        'auth.home': 'กลับหน้าหลัก',
         'auth.bypass': 'ข้ามการเข้าสู่ระบบ (โหมดทดสอบ)',
         'auth.toRegister': 'ยังไม่มีบัญชี? ลงทะเบียนใหม่',
 
@@ -410,6 +431,9 @@ const messages = {
         'db.actions': 'การจัดการ',
         'db.delete': 'ลบ',
         'db.confirmDelete': 'ต้องการลบสมาชิก {email} หรือไม่?',
+        'db.confirmTitle': 'ยืนยันการลบ',
+        'db.confirmDeleteCart': 'ต้องการลบประวัติคำสั่งซื้อ {id} หรือไม่?',
+        'db.cancel': 'ยกเลิก',
         'db.memberEmailRequired': 'กรุณาระบุอีเมลสมาชิก',
         'db.memberNotFound': 'ไม่พบสมาชิก',
         'db.deleteMemberFail': 'ไม่สามารถลบสมาชิกได้',

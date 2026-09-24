@@ -11,7 +11,7 @@
             <router-link :to="{ name: 'ProductShow', params: { pdId: product.pdId } }" class="product-detail-link">{{ t('product.detail') }} →</router-link>
             <div class="product-foot">
                 <strong class="sk-mono">${{ Number(product.pdPrice).toFixed(2) }}</strong>
-                <button class="sk-btn" :class="{ 'sk-btn-leaf': added }" type="button" :disabled="busy" @click="add">
+                <button class="sk-btn" type="button" :disabled="busy" @click="add">
                     <SkyIcon :name="added ? 'check' : 'cart'" :size="22" />
                     <span>{{ t(added ? 'product.added' : 'product.add') }}</span>
                 </button>
@@ -19,27 +19,30 @@
             <p class="visually-hidden" aria-live="polite">{{ added ? t('product.addedLive', { name: product.pdName }) : '' }}</p>
         </div>
     </article>
+
+    <div v-if="notice.open" class="notice-overlay" @click.self="closeNotice">
+        <div class="notice-dialog" role="dialog" aria-modal="true" aria-labelledby="product-notice-title">
+            <h3 id="product-notice-title">{{ notice.title }}</h3>
+            <p>{{ notice.message }}</p>
+            <button type="button" class="sk-btn" @click="closeNotice">{{ t('common.close') }}</button>
+        </div>
+    </div>
 </template>
 
 <script setup>
 import { ref } from 'vue'
 import SkyIcon from './SkyIcon.vue'
 import { useCartStore } from '../stores/cartStore.js'
-import { useAuthStore } from '../stores/authStore.js'
 import { t } from '../i18n.js'
 
 const props = defineProps({ product: { type: Object, required: true } })
 const cartStore = useCartStore()
-const authStore = useAuthStore()
 const added = ref(false)
 const busy = ref(false)
+const notice = ref({ open: false, title: '', message: '' })
 let timer
 
 const add = async () => {
-    if (!authStore.isLogin) {
-        window.alert(t('product.loginFirst'))
-        return
-    }
     busy.value = true
     try {
         await cartStore.addProduct(props.product)
@@ -48,10 +51,14 @@ const add = async () => {
         timer = setTimeout(() => { added.value = false }, 1600)
     } catch (err) {
         console.log(err.message)
-        window.alert(t('product.addFail'))
+        notice.value = { open: true, title: t('product.addFailTitle'), message: t('product.addFail') }
     } finally {
         busy.value = false
     }
+}
+
+const closeNotice = () => {
+    notice.value = { open: false, title: '', message: '' }
 }
 </script>
 
@@ -67,4 +74,20 @@ const add = async () => {
 .product-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; width: 100%; margin-top: auto; padding-top: 16px; }
 .product-foot strong { font-size: 24px; }
 .product-foot .sk-btn { padding: 0 20px; }
+.product-card .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+.notice-overlay { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; background: rgba(15, 23, 42, .5); }
+.notice-dialog { width: min(380px, calc(100vw - 32px)); padding: 24px; color: var(--ink); background: var(--surface); border: 1px solid var(--outline); border-radius: var(--r-card); box-shadow: var(--shadow-active); }
+.notice-dialog h3 { margin: 0 0 8px; font-size: 22px; }
+.notice-dialog p { margin: 0 0 20px; color: var(--ink-muted); }
+.notice-dialog .sk-btn { width: 100%; }
 </style>

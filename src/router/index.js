@@ -16,13 +16,11 @@ const routes = [
         path: '/',
         name: 'Home',
         component: TheHome,
-        meta: { requiresAuth: true },
     },
     {
         path: '/product',
         name: 'Product',
         component: TheProduct,
-        meta: { requiresAuth: true },
     },
     {
         path: '/manage',
@@ -51,7 +49,6 @@ const routes = [
         path: '/productshow/:pdId',
         name: 'ProductShow',
         component: ProductShow,
-        meta: { requiresAuth: true },
     },
     {
         path: '/cartshow/:cartId',
@@ -63,7 +60,6 @@ const routes = [
         path: '/cartlist',
         name: 'CartList',
         component: CartList,
-        meta: { requiresAuth: true },
     },
     {
         path: '/cart',

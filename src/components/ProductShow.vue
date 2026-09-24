@@ -81,11 +81,6 @@ onMounted(async () => {
 })
 
 const addToCart = async () => {
-    if (!authStore.isLogin) {
-        message.value = 'product.loginFirst'
-        added.value = false
-        return
-    }
     busy.value = true
     try {
         await cartStore.addProduct(product.value)

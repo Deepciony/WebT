@@ -77,7 +77,6 @@
     import { onMounted, ref } from 'vue';
     import axios from 'axios';
     import { useCartStore } from '../stores/cartStore.js';
-    import { useAuthStore } from '../stores/authStore.js';
     import { isSky } from '../stores/theme.js';
     import { t } from '../i18n.js';
     import ProductCard from './ProductCard.vue';
@@ -89,14 +88,11 @@
     const loading = ref(true)
     const error = ref(false)
     const cartStore = useCartStore()
-    const authStore = useAuthStore()
     const addProduct = async (pd) => {
-        if (!authStore.isLogin) return window.alert(t('product.loginFirst'))
         try {
             await cartStore.addProduct(pd)
         } catch (err) {
             console.log(err.message)
-            window.alert(t('product.addFail'))
         }
     }
 

@@ -17,7 +17,7 @@
       </nav>
 
       <AppSwitches class="sky-actions" />
-      <CartInfo v-if="authStore.isLogin" class="sky-cart" />
+      <CartInfo class="sky-cart" />
       <button v-if="authStore.isLogin" class="sky-logout" type="button" :aria-label="t('profile.logout')" :title="t('profile.logout')" @click="memLogout">
         <SkyIcon name="logout" :size="24" />
       </button>
@@ -47,7 +47,7 @@
           <li v-if="authStore.isLogin" class="nav-item">
             <router-link to="/database"><div class="nav-link">{{ t('nav.database') }}</div></router-link>
           </li>
-          <li v-if="authStore.isLogin" class="nav-item">
+          <li class="nav-item">
             <CartInfo />
           </li>
           <li v-if="authStore.isLogin" class="nav-item">

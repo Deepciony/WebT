@@ -1,13 +1,32 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import axios from 'axios'
+import { useAuthStore } from './authStore.js'
 
 const API = 'http://localhost:3000'
+const GUEST_CART_KEY = 'kushop-guest-cart'
 
 export const useCartStore = defineStore('cart', () => {
     const cartId = ref(null)
     const theQty = ref(0)
     const money = ref(0)
+    const guestItems = ref([])
+    const authStore = useAuthStore()
+
+    const loadGuestCart = () => {
+        try {
+            const saved = JSON.parse(localStorage.getItem(GUEST_CART_KEY) || '[]')
+            guestItems.value = Array.isArray(saved) ? saved : []
+        } catch {
+            guestItems.value = []
+        }
+    }
+
+    const saveGuestCart = () => {
+        localStorage.setItem(GUEST_CART_KEY, JSON.stringify(guestItems.value))
+        theQty.value = guestItems.value.reduce((sum, item) => sum + Number(item.qty), 0)
+        money.value = guestItems.value.reduce((sum, item) => sum + Number(item.price) * Number(item.qty), 0)
+    }
 
     // Which cart is still open for this member (not confirmed yet)
     const chkCart = async () => {
@@ -36,8 +55,18 @@ export const useCartStore = defineStore('cart', () => {
 
     // Read the open cart and its totals; used on load and after every change
     const refresh = async () => {
+        loadGuestCart()
+        if (!authStore.isLogin) {
+            saveGuestCart()
+            return
+        }
         try {
             await chkCart()
+            for (const item of guestItems.value) await addServerProduct(item)
+            if (guestItems.value.length) {
+                guestItems.value = []
+                saveGuestCart()
+            }
             await sumCart()
         } catch (err) {
             console.log(err.message)
@@ -45,19 +74,60 @@ export const useCartStore = defineStore('cart', () => {
         }
     }
 
-    // Creates the cart on first use, then adds the product to it
-    const addProduct = async (product, qty = 1) => {
+    const addServerProduct = async (product, qty = 1) => {
         if (!cartId.value) await chkCart()
         if (!cartId.value) await addCart()
 
         const res = await axios.post(`${API}/carts/addcartdtl`, {
             cartId: cartId.value,
             pdId: product.pdId,
-            pdPrice: product.pdPrice,
+            pdPrice: product.pdPrice ?? product.price,
             qty
         })
         if (!res.data.cartDtlOK) throw new Error(res.data.messageAddCartDtl)
+    }
+
+    // Creates the cart on first use, then adds the product to it
+    const addProduct = async (product, qty = 1) => {
+        if (!authStore.isLogin) {
+            loadGuestCart()
+            const existing = guestItems.value.find(item => item.pdId === product.pdId)
+            if (existing) {
+                existing.qty += qty
+            } else {
+                guestItems.value.push({
+                    pdId: product.pdId,
+                    pdName: product.pdName,
+                    price: Number(product.pdPrice ?? product.price) || 0,
+                    qty,
+                    logosrc: product.logosrc || '',
+                    brand: product.brand || null
+                })
+            }
+            saveGuestCart()
+            return
+        }
+
+        await addServerProduct(product, qty)
         await sumCart()
+    }
+
+    const removeGuestProduct = (pdId) => {
+        loadGuestCart()
+        guestItems.value = guestItems.value.filter(item => item.pdId !== pdId)
+        saveGuestCart()
+    }
+
+    const adjustGuestQty = (pdId, qty) => {
+        loadGuestCart()
+        const item = guestItems.value.find(entry => entry.pdId === pdId)
+        if (!item) return
+        if (qty <= 0) {
+            removeGuestProduct(pdId)
+            return
+        }
+        item.qty = qty
+        saveGuestCart()
     }
 
     const setQty = async (id, pdId, qty) => {
@@ -91,5 +161,8 @@ export const useCartStore = defineStore('cart', () => {
         money.value = 0
     }
 
-    return { cartId, theQty, money, chkCart, addCart, sumCart, refresh, addProduct, setQty, removeProduct, deleteCart, confirmCart, reset }
+    loadGuestCart()
+    saveGuestCart()
+
+    return { cartId, theQty, money, guestItems, chkCart, addCart, sumCart, refresh, addProduct, removeGuestProduct, adjustGuestQty, setQty, removeProduct, deleteCart, confirmCart, reset }
 })
