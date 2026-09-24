@@ -1,7 +1,5 @@
 <template>
     <section class="cart-page sk-page">
-        <SkyConfetti v-if="celebrate" />
-
         <p v-if="loading" class="cart-state" aria-busy="true">{{ t('db.loading') }}</p>
 
         <div v-else-if="!cart" class="cart-state sk-empty">
@@ -69,6 +67,17 @@
                 <router-link to="/product" class="sk-btn">{{ t('cart.browse') }}</router-link>
             </div>
         </template>
+
+        <div v-if="confirmState.open" class="confirm-overlay" @click.self="closeConfirmDialog">
+            <div class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-dialog-title">
+                <p class="confirm-host">{{ confirmHost }}</p>
+                <h3 id="confirm-dialog-title">{{ confirmState.title }}</h3>
+                <div class="confirm-actions">
+                    <button type="button" class="confirm-cancel" @click="closeConfirmDialog">Cancel</button>
+                    <button type="button" class="confirm-ok" @click="runConfirmAction">OK</button>
+                </div>
+            </div>
+        </div>
     </section>
 </template>
 
@@ -79,7 +88,6 @@ import axios from 'axios'
 import { useCartStore } from '../stores/cartStore.js'
 import { isSky } from '../stores/theme.js'
 import { t } from '../i18n.js'
-import SkyConfetti from './SkyConfetti.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -91,7 +99,14 @@ const loading = ref(true)
 const busy = ref(false)
 const done = ref(false)
 const message = ref('')
-const celebrate = ref(false)
+const confirmState = ref({ open: false, title: '', action: null })
+let dismissTimer = null
+
+const confirmHost = computed(() => {
+    const host = window.location.hostname || 'localhost'
+    const port = window.location.port ? `:${window.location.port}` : ''
+    return `${host}${port} says`
+})
 
 const totalQty = computed(() => items.value.reduce((sum, item) => sum + Number(item.qty), 0))
 const totalMoney = computed(() => items.value.reduce((sum, item) => sum + Number(item.price) * Number(item.qty), 0))
@@ -149,20 +164,52 @@ const removeItem = (item) => run(async () => {
     await load()
 })
 
-const removeCart = async () => {
-    if (!window.confirm(t('cartdb.confirmDelete'))) return
-    const ok = await run(() => cartStore.deleteCart(cart.value.cartId))
-    if (ok) router.push('/cartlist')
+const clearSuccessMessage = () => {
+    if (dismissTimer) {
+        clearTimeout(dismissTimer)
+        dismissTimer = null
+    }
+    message.value = ''
+    done.value = false
 }
 
-const confirmOrder = async () => {
-    if (!window.confirm(t('cartdb.confirmOrder'))) return
-    const ok = await run(() => cartStore.confirmCart(cart.value.cartId))
-    if (!ok) return
-    done.value = true
-    message.value = 'cartdb.done'
-    celebrate.value = isSky.value
-    await load()
+const closeConfirmDialog = () => {
+    confirmState.value = { open: false, title: '', action: null }
+}
+
+const runConfirmAction = async () => {
+    const action = confirmState.value.action
+    closeConfirmDialog()
+    if (action) await action()
+}
+
+const openConfirmDialog = (title, action) => {
+    confirmState.value = {
+        open: true,
+        title,
+        action
+    }
+}
+
+const removeCart = () => {
+    openConfirmDialog('Delete cart?', async () => {
+        const ok = await run(() => cartStore.deleteCart(cart.value.cartId))
+        if (ok) router.push('/cartlist')
+    })
+}
+
+const confirmOrder = () => {
+    openConfirmDialog('Confirm this order?', async () => {
+        const ok = await run(() => cartStore.confirmCart(cart.value.cartId))
+        if (!ok) return
+        done.value = true
+        message.value = 'cartdb.done'
+        clearTimeout(dismissTimer)
+        dismissTimer = setTimeout(() => {
+            clearSuccessMessage()
+        }, 2400)
+        await load()
+    })
 }
 
 watch(() => route.params.cartId, load)
@@ -194,11 +241,74 @@ onMounted(load)
 .checkout-card h2 { margin: 0 0 18px; font-size: 24px; }
 .summary-line, .summary-total { display: flex; justify-content: space-between; padding: 9px 0; color: #71808a; }
 .summary-total { margin: 8px 0 18px; padding-top: 15px; color: #243746; border-top: 1px solid #dce5df; font-size: 19px; }
-.checkout-button { width: 100%; padding: 13px; color: #fff; background: #198754; border: 0; border-radius: 5px; cursor: pointer; font-weight: 700; }
+.checkout-button { width: 100%; padding: 13px; color: #fff; background: var(--sky, #198754); border: 1px solid var(--sky-deep, #198754); border-radius: 5px; cursor: pointer; font-weight: 700; }
 .checkout-button span { float: right; font-size: 19px; }
 .delete-cart, .checkout-card a { display: block; width: 100%; margin-top: 10px; padding: 11px; border-radius: 5px; cursor: pointer; font-weight: 700; text-align: center; text-decoration: none; }
-.delete-cart { color: #c0392b; background: #fff; border: 1px solid #e2b8b2; }
-.checkout-card a { color: #52606d; background: #edf0f2; border: 0; }
+.delete-cart { color: var(--coral-ink, #c0392b); background: var(--surface, #fff); border: 1px solid var(--coral, #e2b8b2); }
+.checkout-card a { color: var(--ink-muted, #52606d); background: var(--sunken, #edf0f2); border: 1px solid var(--outline, #dce5df); }
+.sk-msg {
+    margin: 0 0 22px;
+    padding: 18px 20px;
+    border-radius: 14px;
+    box-shadow: 0 10px 18px rgba(22, 163, 74, .08);
+}
+.cart-layout {
+    margin-top: 4px;
+}
+.confirm-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: grid;
+    place-items: center;
+    background: rgba(15, 23, 42, .55);
+}
+.confirm-dialog {
+    width: min(420px, calc(100vw - 32px));
+    padding: 18px 20px 16px;
+    color: #fff;
+    background: rgba(26, 29, 31, .9);
+    border: 1px solid rgba(255, 255, 255, .12);
+    border-radius: 12px;
+    box-shadow: 0 20px 52px rgba(15, 23, 42, .28);
+}
+.confirm-host {
+    margin: 0 0 8px;
+    color: rgba(255, 255, 255, .82);
+    font-size: 13px;
+    font-weight: 500;
+}
+.confirm-dialog h3 {
+    margin: 0 0 18px;
+    color: #fff;
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.25;
+}
+.confirm-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+.confirm-cancel,
+.confirm-ok {
+    min-width: 100px;
+    min-height: 40px;
+    padding: 8px 18px;
+    border: 0;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 700;
+}
+.confirm-cancel {
+    color: #0f172a;
+    background: #f8fafc;
+}
+.confirm-ok {
+    color: #0f172a;
+    background: #e5e7eb;
+}
 .empty-cart { padding: 80px 20px; text-align: center; }
 .empty-cart span { color: #f0c75e; font-size: 52px; }
 .empty-cart h2 { margin: 10px 0 6px; font-size: 25px; }
@@ -209,7 +319,7 @@ onMounted(load)
 :root[data-theme="sky"] .cart-header { align-items: flex-end; }
 :root[data-theme="sky"] .cart-count { padding: 8px 16px; font-size: 16px; }
 :root[data-theme="sky"] .cart-layout { grid-template-columns: minmax(0, 1.45fr) minmax(340px, .85fr); gap: 32px; }
-:root[data-theme="sky"] .cart-item { grid-template-columns: 112px minmax(0, 1fr) auto auto 56px; gap: 20px; margin-bottom: 16px; padding: 16px; }
+:root[data-theme="sky"] .cart-item { grid-template-columns: 112px minmax(0, 1fr) auto auto 56px; gap: 20px; margin-bottom: 16px; padding: 16px; border-radius: 18px; box-shadow: 0 8px 22px rgba(15, 23, 42, .06); }
 :root[data-theme="sky"] .cart-item img { width: 112px; height: 112px; padding: 8px; background: var(--sunken); border-radius: 14px; }
 :root[data-theme="sky"] .cart-item-info small { color: var(--sky-deep); font-size: 14px; }
 :root[data-theme="sky"] .cart-item-info h2 { margin: 4px 0; font-size: 20px; }
@@ -222,12 +332,17 @@ onMounted(load)
 :root[data-theme="sky"] .quantity-control span { min-width: 32px; font-size: 18px; font-weight: 700; }
 :root[data-theme="sky"] .remove-item { width: 56px; height: 56px; color: var(--coral-ink); border-radius: 16px; font-size: 28px; }
 :root[data-theme="sky"] .remove-item:hover { background: var(--coral-soft); }
-:root[data-theme="sky"] .checkout-card { position: sticky; top: 120px; padding: 32px; }
+:root[data-theme="sky"] .checkout-card { position: sticky; top: 120px; padding: 32px; border-radius: 22px; box-shadow: 0 12px 28px rgba(15, 23, 42, .08); }
 :root[data-theme="sky"] .checkout-card h2 { margin: 0 0 20px; font-size: 28px; }
 :root[data-theme="sky"] .summary-line { padding: 10px 0; color: var(--ink-muted); }
 :root[data-theme="sky"] .summary-line .free { color: var(--leaf-ink); }
 :root[data-theme="sky"] .summary-total { margin: 8px 0 24px; padding-top: 16px; color: var(--ink); border-color: var(--outline); font-size: 22px; font-weight: 700; }
 :root[data-theme="sky"] .summary-total strong { color: var(--sky-deep); font-size: 28px; }
+:root[data-theme="sky"] .checkout-button { background: var(--sky); border-color: var(--sky-deep); }
+:root[data-theme="sky"] .checkout-button:hover, :root[data-theme="sky"] .checkout-button:focus-visible { color: #fff; background: var(--sky-deep); border-color: var(--sky-deep); border-bottom-color: var(--sky-bright); }
+:root[data-theme="sky"] .delete-cart { color: var(--coral-ink); background: var(--surface); border-color: var(--coral); }
+:root[data-theme="sky"] .delete-cart:hover, :root[data-theme="sky"] .delete-cart:focus-visible { color: var(--coral-ink); background: var(--coral-soft); border-color: var(--coral-ink); border-bottom-color: var(--coral); }
+:root[data-theme="sky"] .checkout-card a { color: var(--ink); background: var(--sunken); border-color: var(--outline); }
 :root[data-theme="sky"] .checkout-button span { float: none; }
 :root[data-theme="sky"] .delete-cart, :root[data-theme="sky"] .checkout-card a { margin-top: 12px; }
 @media (max-width: 1000px) {

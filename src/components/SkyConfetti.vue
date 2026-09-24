@@ -1,7 +1,7 @@
 <template>
     <div class="confetti" aria-hidden="true">
+        <span class="burst" aria-hidden="true">★</span>
         <span v-for="piece in pieces" :key="piece.id" class="piece" :style="piece.style"></span>
-        <span class="burst">★</span>
     </div>
 </template>
 
@@ -29,12 +29,27 @@ const pieces = Array.from({ length: 36 }, (_, id) => ({
     border-radius: 3px;
     animation: fall 1.6s cubic-bezier(.25, .6, .5, 1) forwards;
 }
-.burst { display: none; }
+.burst {
+    position: absolute;
+    top: 18px;
+    left: 50%;
+    display: block;
+    color: var(--sun);
+    font-size: clamp(52px, 5vw, 96px);
+    line-height: 1;
+    text-shadow: 0 8px 18px rgba(255, 191, 0, .35);
+    transform: translateX(-50%);
+    animation: sparkle 1.4s ease-in-out infinite alternate;
+}
 @keyframes fall {
     to { opacity: 0; transform: translate(var(--drift), 100vh) rotate(var(--spin)); }
 }
+@keyframes sparkle {
+    0% { transform: translateX(-50%) scale(.92); opacity: .85; }
+    100% { transform: translateX(-50%) scale(1.08); opacity: 1; }
+}
 @media (prefers-reduced-motion: reduce) {
     .piece { display: none; }
-    .burst { position: absolute; top: 30%; left: 50%; display: block; color: var(--sun); font-size: 96px; transform: translate(-50%, -50%); }
+    .burst { animation: none; }
 }
 </style>

@@ -1,6 +1,6 @@
 import database from "../database.js";
 
-const tables = ["products", "brands", "members", "pdTypes"];
+const tables = ["products", "brands", "members", "pdTypes", "carts"];
 
 export async function deleteMember(req, res) {
     // requireLogin already verified the token cookie and filled req.member
@@ -27,6 +27,48 @@ export async function deleteMember(req, res) {
     } catch (err) {
         console.error(err);
         return res.status(500).json({ error: 'db.deleteMemberFail' });
+    }
+}
+
+export async function deleteCartHistory(req, res) {
+    const cartId = typeof req.params.cartId === 'string' ? req.params.cartId.trim() : '';
+    if (!cartId) {
+        return res.status(400).json({ error: 'db.cartIdRequired' });
+    }
+
+    const isAdmin = req.member?.dutyId === 'admin';
+    try {
+        const cartResult = await database.query({
+            text: `SELECT "cusId" FROM carts WHERE "cartId" = $1;`,
+            values: [cartId]
+        });
+
+        if (!cartResult.rowCount) {
+            return res.status(404).json({ error: 'db.cartNotFound' });
+        }
+
+        if (!isAdmin && cartResult.rows[0].cusId !== req.member?.memEmail) {
+            return res.status(403).json({ error: 'db.deleteCartNotAllowed' });
+        }
+
+        await database.query({
+            text: `DELETE FROM "cartDtl" WHERE "cartId" = $1;`,
+            values: [cartId]
+        });
+
+        const result = await database.query({
+            text: `DELETE FROM carts WHERE "cartId" = $1 RETURNING "cartId";`,
+            values: [cartId]
+        });
+
+        if (!result.rowCount) {
+            return res.status(404).json({ error: 'db.cartNotFound' });
+        }
+
+        return res.status(200).json({ deleted: result.rows[0].cartId });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: 'db.deleteCartFail' });
     }
 }
 

@@ -38,8 +38,8 @@
                         <tbody>
                             <tr v-for="(row, index) in table.rows" :key="index">
                                 <td v-for="key in rowKeys(row)" :key="key">{{ formatValue(row[key]) }}</td>
-                                <td v-if="table.name === 'members'">
-                                    <button v-if="canDelete(row.memEmail)" class="delete-member" type="button" @click="deleteMember(row.memEmail)">
+                                <td v-if="table.name === 'members' || table.name === 'carts'">
+                                    <button v-if="table.name === 'members' ? canDelete(row.memEmail) : canDeleteCart(row)" class="delete-member" type="button" @click="table.name === 'members' ? deleteMember(row.memEmail) : deleteCart(row.cartId)">
                                         {{ t('db.delete') }}
                                     </button>
                                 </td>
@@ -64,6 +64,7 @@ const authStore = useAuthStore()
 
 // Admins may remove anyone; everyone else only their own account
 const canDelete = (memEmail) => authStore.member?.dutyId === 'admin' || authStore.member?.memEmail === memEmail
+const canDeleteCart = (row) => authStore.member?.dutyId === 'admin' || authStore.member?.memEmail === row?.cusId
 
 const tables = ref([])
 const loading = ref(true)
@@ -97,6 +98,18 @@ const deleteMember = async (memEmail) => {
     }
 }
 
+const deleteCart = async (cartId) => {
+    if (!window.confirm(`Delete order history ${cartId}?`)) return
+
+    error.value = ''
+    try {
+        await axios.delete(`http://localhost:3000/database/carts/${encodeURIComponent(cartId)}`)
+        await loadOverview()
+    } catch (requestError) {
+        error.value = requestError.response?.data?.error || 'db.deleteCartFail'
+    }
+}
+
 onMounted(loadOverview)
 </script>
 
@@ -109,7 +122,7 @@ onMounted(loadOverview)
 .database-kicker, .table-label { color: #198754 !important; font-size: 11px; font-weight: 700; letter-spacing: .14em; }
 .database-kicker { margin-bottom: 8px !important; }
 .refresh-button { padding: 10px 16px; color: #fff; background: #2c3e50; border: 0; border-radius: 5px; cursor: pointer; font-weight: 700; }
-.database-tables { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; max-width: 1180px; margin: auto; }
+.database-tables { display: grid; grid-template-columns: 1fr; gap: 22px; max-width: 1180px; margin: auto; }
 .database-table { min-width: 0; overflow: hidden; background: #fff; border: 1px solid #dfe6e2; border-radius: 9px; box-shadow: 0 4px 15px rgba(44, 62, 80, .06); }
 .table-heading { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px 12px; }
 .table-heading h2 { margin: 4px 0 0; color: #2c3e50; font-size: 22px; }
@@ -126,7 +139,7 @@ td { color: #33434c; }
 .delete-member:hover { color: #fff; background: #c0392b; }
 .empty-table, .database-loading, .database-error { padding: 22px; color: #71808a; text-align: center; }
 .database-error { color: #c0392b; }
-@media (max-width: 800px) { .database-heading { align-items: start; flex-direction: column; } .database-tables { grid-template-columns: 1fr; } }
+@media (max-width: 800px) { .database-heading { align-items: start; flex-direction: column; } }
 
 /* Skylearn: denser "parent view" styling for data */
 :root[data-theme="sky"] .database-page { max-width: 1280px; margin: 0 auto; padding: 48px 24px 96px; background: none; }
@@ -134,7 +147,7 @@ td { color: #33434c; }
 :root[data-theme="sky"] .database-heading h1 { color: var(--ink); }
 :root[data-theme="sky"] .database-kicker { color: var(--sky-deep) !important; font-size: 14px; letter-spacing: .06em; }
 :root[data-theme="sky"] .security-note { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; padding: 4px 12px; color: #92400e; background: #fef3c7; border-radius: 999px; font-size: 14px; }
-:root[data-theme="sky"] .database-tables { max-width: none; gap: 32px; }
+:root[data-theme="sky"] .database-tables { max-width: none; gap: 28px; }
 :root[data-theme="sky"] .table-heading { padding: 24px 24px 16px; }
 :root[data-theme="sky"] .table-label { color: var(--ink-subtle) !important; font-size: 14px; letter-spacing: .08em; }
 :root[data-theme="sky"] .table-heading h2 { color: var(--ink); font-family: var(--font-mono); font-size: 22px; }
@@ -153,9 +166,6 @@ td { color: #33434c; }
 :root[data-theme="sky"] tbody tr:hover { background: var(--sky-soft); }
 :root[data-theme="sky"] .empty-table, :root[data-theme="sky"] .database-loading { padding: 32px; color: var(--ink-muted); font-size: 16px; }
 :root[data-theme="sky"] .database-error { justify-content: center; margin: 0 0 24px; padding: 16px 20px; color: var(--coral-ink); }
-@media (max-width: 1000px) {
-    :root[data-theme="sky"] .database-tables { grid-template-columns: 1fr; }
-}
 @media (max-width: 640px) {
     :root[data-theme="sky"] .database-page { padding: 32px 20px 64px; }
     :root[data-theme="sky"] .database-heading { align-items: stretch; }
