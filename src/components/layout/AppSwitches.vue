@@ -5,8 +5,8 @@
 </template>
 
 <script setup>
-import SegmentSwitch from './SegmentSwitch.vue'
-import { locale, setLocale, t } from '../i18n.js'
+import SegmentSwitch from '../ui/SegmentSwitch.vue'
+import { locale, setLocale, t } from '../../i18n.js'
 
 const langOptions = [
     { value: 'en', label: 'EN', lang: 'en' },

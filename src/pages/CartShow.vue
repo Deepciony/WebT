@@ -95,7 +95,7 @@ import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import { useCartStore } from '../stores/cartStore.js'
 import { t } from '../i18n.js'
-import SkySelect from './SkySelect.vue'
+import SkySelect from '../components/ui/SkySelect.vue'
 
 const route = useRoute()
 const router = useRouter()

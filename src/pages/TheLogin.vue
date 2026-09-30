@@ -20,9 +20,9 @@ import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import { useAuthStore } from '../stores/authStore.js'
 import { t } from '../i18n.js'
-import AuthLayout from './AuthLayout.vue'
+import AuthLayout from '../components/layout/AuthLayout.vue'
 
-const DevBypass = import.meta.env.DEV ? defineAsyncComponent(() => import('./DevBypass.vue')) : null
+const DevBypass = import.meta.env.DEV ? defineAsyncComponent(() => import('../components/ui/DevBypass.vue')) : null
 
 const authStore = useAuthStore()
 const router = useRouter()

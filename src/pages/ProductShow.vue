@@ -50,7 +50,7 @@ import axios from 'axios'
 import { useCartStore } from '../stores/cartStore.js'
 import { useAuthStore } from '../stores/authStore.js'
 import { t } from '../i18n.js'
-import SkyIcon from './SkyIcon.vue'
+import SkyIcon from '../components/ui/SkyIcon.vue'
 
 const route = useRoute()
 const cartStore = useCartStore()

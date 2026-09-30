@@ -1,6 +1,6 @@
 import express from "express";
-import * as memberC from "../../controllers/memberController.js";
-import { requireLogin } from "../../controllers/authMiddleware.js";
+import * as memberC from "../controllers/memberController.js";
+import { requireLogin } from "../controllers/authMiddleware.js";
 
 const router = express.Router();
 

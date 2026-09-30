@@ -14,7 +14,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import SkySelect from './SkySelect.vue'
-import { t } from '../i18n.js'
+import { t } from '../../i18n.js'
 
 const props = defineProps({
     min: { type: [String, Number], default: '' },

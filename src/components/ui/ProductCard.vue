@@ -32,8 +32,8 @@
 <script setup>
 import { ref } from 'vue'
 import SkyIcon from './SkyIcon.vue'
-import { useCartStore } from '../stores/cartStore.js'
-import { t } from '../i18n.js'
+import { useCartStore } from '../../stores/cartStore.js'
+import { t } from '../../i18n.js'
 
 const props = defineProps({ product: { type: Object, required: true } })
 const cartStore = useCartStore()

@@ -1,14 +1,14 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import TheHome from '../components/TheHome.vue';
-import TheProduct from '../components/PageProduct.vue';
-import TheLogin from '../components/TheLogin.vue';
-import TheRegister from '../components/TheRegister.vue';
-import PageMember from '../components/PageMember.vue';
-import ProductManage from '../components/ProductManage.vue';
-import DatabaseOverview from '../components/DatabaseOverview.vue';
-import ProductShow from '../components/ProductShow.vue';
-import CartShow from '../components/CartShow.vue';
-import CartList from '../components/CartList.vue';
+import TheHome from '../pages/TheHome.vue';
+import TheProduct from '../pages/PageProduct.vue';
+import TheLogin from '../pages/TheLogin.vue';
+import TheRegister from '../pages/TheRegister.vue';
+import PageMember from '../pages/PageMember.vue';
+import ProductManage from '../pages/ProductManage.vue';
+import DatabaseOverview from '../pages/DatabaseOverview.vue';
+import ProductShow from '../pages/ProductShow.vue';
+import CartShow from '../pages/CartShow.vue';
+import CartList from '../pages/CartList.vue';
 import { useAuthStore } from '../stores/authStore.js';
 
 const routes = [

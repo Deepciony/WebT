@@ -34,9 +34,12 @@ const code = (label, text, lang = '') => `
 const note = (kind, title, body) => `<aside class="note ${kind}"><strong>${title}</strong><div>${body}</div></aside>`
 
 const pkg = JSON.parse(read('package.json'))
-const memberController = read('controllers/memberController.js')
-const cartController = read('controllers/cartController.js')
-const mainMenu = read('src/components/MainMenu.vue')
+const memberController = read('server/controllers/memberController.js')
+const cartController = read('server/controllers/cartController.js')
+const serverIndex = read('server/index.js')
+const pageMember = read('src/pages/PageMember.vue')
+const nginxConf = read('docs/nginx.conf.example')
+const mainMenu = read('src/components/layout/MainMenu.vue')
 const menuScript = scriptOnly(mainMenu)
 const menuItems = (mainMenu.match(/ *<li v-if="!?authStore\.isLogin" class="nav-item">[\s\S]*?<\/li>/g) || [])
     .filter((li) => /pagemember|memLogout|\/login|CartInfo/.test(li))
@@ -117,8 +120,8 @@ const html = `<!doctype html>
 
 <div class="cover">
   <div class="kicker">WEB TECHNOLOGY AND WEB SERVICES · 01418441</div>
-  <h1>คู่มือทำ Lab 09–11<br>Authentication, JWT &amp; Cart</h1>
-  <p class="sub">ขั้นตอนละเอียดสำหรับโปรเจกต์ KUSHOP ตั้งแต่สร้างตารางในฐานข้อมูล เขียน backend และ frontend ไปจนถึงทดสอบระบบสมาชิก การเข้าสู่ระบบด้วย JWT ใน cookie และตะกร้าสินค้าที่เก็บในฐานข้อมูล</p>
+  <h1>คู่มือทำ Lab 09–12<br>Authentication, JWT, Cart &amp; File Upload</h1>
+  <p class="sub">ขั้นตอนละเอียดสำหรับโปรเจกต์ KUSHOP ตั้งแต่สร้างตารางในฐานข้อมูล เขียน backend และ frontend ระบบสมาชิก การเข้าสู่ระบบด้วย JWT ใน cookie ตะกร้าสินค้าที่เก็บในฐานข้อมูล การอัปโหลดรูปสมาชิก และการ deploy ขึ้น NGINX</p>
   <div class="meta">
     โค้ดทั้งหมดในเอกสารนี้ดึงมาจากไฟล์จริงในโปรเจกต์ ณ วันที่สร้างเอกสาร<br>
     Node.js ${esc(pkg.engines.node)} · Express · PostgreSQL · Vue 3 · Pinia
@@ -128,9 +131,10 @@ const html = `<!doctype html>
 <section class="toc">
   <h2>สารบัญ</h2>
   <ul class="toc-parts">
-    <li><b>ส่วน A</b> สรุปสิ่งที่ทำไปแล้วใน Lab 09–11</li>
+    <li><b>ส่วน A</b> สรุปสิ่งที่ทำไปแล้วใน Lab 09–12</li>
     <li><b>ส่วน B</b> สิ่งที่ต้องทำเอง (ทีละขั้น)</li>
     <li><b>ส่วน C</b> ติดตั้งบนเครื่องใหม่หลัง clone / pull จาก GitHub</li>
+    <li><b>ส่วน D</b> ผังโครงสร้างไฟล์ทั้งโปรเจกต์</li>
   </ul>
   <p class="toc-label">รายละเอียดแต่ละเรื่อง</p>
   <ol>
@@ -146,12 +150,15 @@ const html = `<!doctype html>
     <li>Lab 11 Frontend: cartStore และหน้าตะกร้า</li>
     <li>รันและทดสอบทั้งระบบ</li>
     <li>ปัญหาที่พบบ่อยและวิธีแก้</li>
+    <li>Lab 12: อัปโหลดและแสดงรูปสมาชิก</li>
+    <li>Lab 12: Deploy ด้วย NGINX</li>
+    <li>ส่วนที่ทำเพิ่มนอกแลป (ฟิลเตอร์ ตัวเลือกแบบ custom และการลบข้อมูล)</li>
     <li>สิ่งที่ต่างจากเอกสารแลป</li>
   </ol>
 </section>
 
 <section>
-  <h2><span class="no">A</span>สิ่งที่ทำไปแล้วใน Lab 09–11</h2>
+  <h2><span class="no">A</span>สิ่งที่ทำไปแล้วใน Lab 09–12</h2>
   <p>ส่วนนี้สรุปว่าในโปรเจกต์มีอะไรทำเสร็จแล้วบ้าง <b>ไม่ต้องเขียนโค้ดเหล่านี้ซ้ำ</b> โค้ดเต็มอยู่ในหัวข้อ 5, 7–10</p>
 
   <h3>A.1 Lab 09 – Authentication</h3>
@@ -434,7 +441,7 @@ DB_PASSWORD=1234
 
 # กุญแจลับสำหรับเซ็น JWT
 SECRET_KEY=ใส่ค่าสุ่มยาวๆ-ที่นี่`, 'env')}
-  ${code('database.js', read('database.js'), 'js')}
+  ${code('server/database.js', read('server/database.js'), 'js')}
   ${code('สุ่มค่า SECRET_KEY', `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`, 'bash')}
   ${note('danger', 'ห้ามเปิดเผย SECRET_KEY', '<p>ใครรู้ค่านี้ สร้าง token ปลอมเป็นสมาชิกคนไหนก็ได้ อย่าใช้ค่าง่ายๆ ในงานจริง และอย่า commit ไฟล์ <code>.env</code> ถ้า server เปิดโดยไม่มี <code>SECRET_KEY</code> จะหยุดทำงานพร้อมข้อความ <code>SECRET_KEY is missing</code></p>')}
 </section>
@@ -449,7 +456,7 @@ SECRET_KEY=ใส่ค่าสุ่มยาวๆ-ที่นี่`, 'env'
     <tr><td><code>logoutMember</code></td><td>10</td><td><code>res.clearCookie('token')</code></td></tr>
   </table>
   ${code('controllers/memberController.js', memberController, 'js')}
-  ${code('src/router/memberRoute.js', read('src/router/memberRoute.js'), 'js')}
+  ${code('server/routes/memberRoute.js', read('server/routes/memberRoute.js'), 'js')}
 
   <h3>server.js</h3>
   <ul>
@@ -457,7 +464,7 @@ SECRET_KEY=ใส่ค่าสุ่มยาวๆ-ที่นี่`, 'env'
     <li><b><code>app.use(cookieParser())</code></b> ต้องเรียก <u>ก่อน</u> router ไม่อย่างนั้น <code>req.cookies</code> จะว่าง</li>
     <li>เรียกใช้ <code>memberRoutes</code> และ <code>cartRoutes</code></li>
   </ul>
-  ${code('server.js', read('server.js'), 'js')}
+  ${code('server/index.js', read('server/index.js'), 'js')}
 </section>
 
 <section>
@@ -505,13 +512,13 @@ SECRET_KEY=ใส่ค่าสุ่มยาวๆ-ที่นี่`, 'env'
 <section>
   <h2><span class="no">8</span>Frontend: หน้าสมาชิก</h2>
   <h3>8.1 TheLogin.vue</h3>
-  ${code('src/components/TheLogin.vue', noStyle(read('src/components/TheLogin.vue')), 'vue')}
+  ${code('src/pages/TheLogin.vue', noStyle(read('src/pages/TheLogin.vue')), 'vue')}
 
   <h3>8.2 TheRegister.vue</h3>
-  ${code('src/components/TheRegister.vue', noStyle(read('src/components/TheRegister.vue')), 'vue')}
+  ${code('src/pages/TheRegister.vue', noStyle(read('src/pages/TheRegister.vue')), 'vue')}
 
   <h3>8.3 PageMember.vue</h3>
-  ${code('src/components/PageMember.vue (ไม่รวม CSS)', noStyle(read('src/components/PageMember.vue')), 'vue')}
+  ${code('src/pages/PageMember.vue (ไม่รวม CSS)', noStyle(read('src/pages/PageMember.vue')), 'vue')}
 
   <h3>8.4 MainMenu.vue</h3>
   ${code('src/components/MainMenu.vue — ส่วน script', menuScript, 'vue')}
@@ -532,7 +539,7 @@ SECRET_KEY=ใส่ค่าสุ่มยาวๆ-ที่นี่`, 'env'
     <tr><td><code>sumCart</code> / <code>getCart</code> / <code>getCartDtl</code> / <code>getCartByCus</code></td><td>ยอดรวม · หัวตะกร้า · รายการในตะกร้า · ตะกร้าทั้งหมดของสมาชิก</td></tr>
   </table>
   ${code('controllers/cartController.js', cartController, 'js')}
-  ${code('src/router/cartRoute.js', read('src/router/cartRoute.js'), 'js')}
+  ${code('server/routes/cartRoute.js', read('server/routes/cartRoute.js'), 'js')}
 </section>
 
 <section>
@@ -543,17 +550,17 @@ SECRET_KEY=ใส่ค่าสุ่มยาวๆ-ที่นี่`, 'env'
 
   <h3>10.2 ProductShow.vue <small>(หน้ารายละเอียดสินค้า)</small></h3>
   <p>อ่าน <code>route.params.pdId</code> แล้วเรียก <code>GET /products/:id</code> ปุ่มใส่ตะกร้าจะตรวจการล็อกอินก่อน แล้วเรียก <code>cartStore.addProduct()</code> ซึ่งจะตรวจตะกร้าค้าง สร้างตะกร้าถ้ายังไม่มี และบันทึกสินค้าให้ตามลำดับ</p>
-  ${code('src/components/ProductShow.vue (ไม่รวม CSS)', noStyle(read('src/components/ProductShow.vue')), 'vue')}
+  ${code('src/pages/ProductShow.vue (ไม่รวม CSS)', noStyle(read('src/pages/ProductShow.vue')), 'vue')}
 
   <h3>10.3 CartInfo.vue <small>(ปุ่มตะกร้าบนเมนู)</small></h3>
-  ${code('src/components/CartInfo.vue (ไม่รวม CSS)', noStyle(read('src/components/CartInfo.vue')), 'vue')}
+  ${code('src/components/layout/CartInfo.vue (ไม่รวม CSS)', noStyle(read('src/components/layout/CartInfo.vue')), 'vue')}
 
   <h3>10.4 CartShow.vue <small>(รายละเอียดตะกร้า)</small></h3>
   <p>อ่านหัวตะกร้ากับรายการสินค้าพร้อมกัน ถ้าตะกร้าไม่ใช่ของผู้ใช้คนนี้ API จะคืนค่าว่างและหน้าจะขึ้นว่าไม่มีสิทธิ์ดู ตะกร้าที่ยืนยันแล้วจะซ่อนปุ่มแก้ไขทั้งหมด</p>
-  ${code('src/components/CartShow.vue — ส่วน script', scriptOnly(read('src/components/CartShow.vue')), 'vue')}
+  ${code('src/pages/CartShow.vue — ส่วน script', scriptOnly(read('src/pages/CartShow.vue')), 'vue')}
 
   <h3>10.5 CartList.vue <small>(ตะกร้าทั้งหมดที่เคยสั่ง)</small></h3>
-  ${code('src/components/CartList.vue (ไม่รวม CSS)', noStyle(read('src/components/CartList.vue')), 'vue')}
+  ${code('src/pages/CartList.vue (ไม่รวม CSS)', noStyle(read('src/pages/CartList.vue')), 'vue')}
 </section>
 
 <section>
@@ -600,12 +607,140 @@ SECRET_KEY=ใส่ค่าสุ่มยาวๆ-ที่นี่`, 'env'
   </table>
 </section>
 
+
 <section>
-  <h2><span class="no">13</span>สิ่งที่ต่างจากเอกสารแลป</h2>
+  <h2><span class="no">D</span>ผังโครงสร้างไฟล์</h2>
+  <p>โปรเจกต์นี้เก็บ backend กับ frontend ไว้ใน repo เดียว ใช้ <code>package.json</code> ตัวเดียว แยกกันที่โฟลเดอร์และคำสั่งรัน</p>
+  ${code('โครงสร้างไฟล์ทั้งหมด (ไม่รวม node_modules และ dist)', `WebT/
+├── package.json              สคริปต์: dev (frontend), server (backend), build, preview
+├── vite.config.js            ตั้งค่า Vite
+├── index.html                หน้า host ของ Vue (โหลดฟอนต์, data-theme="sky")
+├── .env                      SECRET_KEY + ค่าเชื่อม PostgreSQL  ← ไม่ขึ้น git ต้องสร้างเอง
+│
+├── server/                   ===== BACKEND (Express, port 3000) =====
+│   ├── index.js              จุดเริ่ม: CORS, cookie-parser, static, ผูก route ทั้งหมด
+│   ├── database.js           pg Pool อ่านค่าจาก .env
+│   ├── controllers/
+│   │   ├── authMiddleware.js requireLogin: ตรวจ JWT ใน cookie แล้วใส่ req.member
+│   │   ├── memberController.js  สมัคร / login / logout / แก้โปรไฟล์ / อัปโหลด-ลบรูป (Lab 09, 10, 12)
+│   │   ├── productController.js CRUD สินค้า + รูปสินค้า + ค้นหา
+│   │   ├── cartController.js    ตะกร้าทั้งชุดตาม Lab 11
+│   │   └── databaseController.js  ดูทุกตาราง + ลบ member / cart / แถวตารางอ้างอิง
+│   └── routes/
+│       ├── memberRoute.js    /members/*
+│       ├── productRoute.js   /products/*, /search/products/:id
+│       ├── cartRoute.js      /carts/*
+│       └── databaseRoute.js  /database/*
+│
+├── src/                      ===== FRONTEND (Vue 3 + Vite, port 5173) =====
+│   ├── main.js               createApp + Pinia + Router + axios.withCredentials
+│   ├── App.vue               MainMenu + router-view
+│   ├── i18n.js               คำแปล EN/TH ทุกข้อความ + แปลข้อความที่ API ส่งมา
+│   ├── router/index.js        เส้นทางหน้าเว็บ + guard requiresAuth / guestOnly
+│   ├── stores/
+│   │   ├── authStore.js      สถานะ login และข้อมูลสมาชิก
+│   │   └── cartStore.js      ตะกร้าในฐานข้อมูล + ตะกร้า guest ใน localStorage
+│   ├── pages/                หนึ่งไฟล์ = หนึ่งหน้าใน router
+│   │   ├── TheHome.vue          หน้าแรก
+│   │   ├── PageProduct.vue      รายการสินค้า + ค้นหา + ฟิลเตอร์
+│   │   ├── ProductShow.vue      รายละเอียดสินค้า
+│   │   ├── ProductManage.vue    เพิ่ม / แก้ / ลบสินค้า + อัปโหลดรูปสินค้า
+│   │   ├── CartShow.vue         ตะกร้าใบเดียว (แก้จำนวน ลบ ยืนยันสั่งซื้อ)
+│   │   ├── CartList.vue         ประวัติคำสั่งซื้อ + ตะกร้าก่อนล็อกอิน
+│   │   ├── DatabaseOverview.vue ดูทุกตาราง + ลบข้อมูล
+│   │   ├── PageMember.vue       โปรไฟล์ + รูปสมาชิก (Lab 12)
+│   │   ├── TheLogin.vue         เข้าสู่ระบบ
+│   │   └── TheRegister.vue      สมัครสมาชิก
+│   ├── components/
+│   │   ├── layout/           MainMenu, AuthLayout, CartInfo, AppSwitches
+│   │   └── ui/               ProductCard, SkySelect, SkyRange, SegmentSwitch, SkyIcon, DevBypass
+│   └── assets/               base.css, main.css, skylearn.css (ดีไซน์หลัก + คลาส .sk-* ที่ใช้ร่วมกัน)
+│
+├── img_pd/                   รูปสินค้า (backend เสิร์ฟที่ /img_pd)
+├── img_mem/                  รูปสมาชิก: default.jpg + avatar-1..3.jpg
+│                             (รูปที่สมาชิกอัปโหลดถูก .gitignore ไว้)
+├── public/favicon.ico
+├── dist/                     ผลลัพธ์ npm run build → เอาไป copy ลง NGINX
+└── docs/
+    ├── Lab09-12-Guide.pdf    เอกสารฉบับนี้
+    ├── build-guide.mjs       สคริปต์สร้าง PDF ฉบับนี้ (node docs/build-guide.mjs)
+    └── nginx.conf.example    ตัวอย่าง config สำหรับ deploy`)}
+  ${note('tip', 'จำง่าย ๆ', 'โค้ดที่รันบนเซิร์ฟเวอร์อยู่ใน <code>server/</code> ทั้งหมด โค้ดที่รันในเบราว์เซอร์อยู่ใน <code>src/</code> ทั้งหมด ไฟล์รูปและ <code>.env</code> อยู่ที่ราก')}
+  <table>
+    <tr><th style="width:26%">อยากแก้อะไร</th><th>ไปที่ไฟล์</th></tr>
+    <tr><td>เพิ่ม API ใหม่</td><td><code>server/controllers/…</code> เขียนฟังก์ชัน แล้วผูกใน <code>server/routes/…</code></td></tr>
+    <tr><td>เพิ่มหน้าใหม่</td><td>สร้างไฟล์ใน <code>src/pages/</code> แล้วเพิ่ม route ใน <code>src/router/index.js</code></td></tr>
+    <tr><td>แก้ข้อความบนหน้าเว็บ</td><td><code>src/i18n.js</code> (ต้องแก้ทั้งบล็อก en และ th)</td></tr>
+    <tr><td>แก้สี ฟอนต์ ปุ่ม</td><td><code>src/assets/skylearn.css</code></td></tr>
+    <tr><td>แก้เมนูด้านบน</td><td><code>src/components/layout/MainMenu.vue</code></td></tr>
+  </table>
+</section>
+
+<section>
+  <h2><span class="no">13</span>Lab 12: อัปโหลดและแสดงรูปสมาชิก</h2>
+  <p>รูปสมาชิกเก็บเป็นไฟล์ในโฟลเดอร์ <code>img_mem</code> ไม่ได้เก็บลงฐานข้อมูล ชื่อไฟล์คืออีเมลของสมาชิก เช่น <code>a@ku.th.jpg</code> ใครยังไม่มีรูปจะใช้ <code>default.jpg</code></p>
+
+  <h3>Backend</h3>
+  <ol>
+    <li>สร้างโฟลเดอร์ <code>img_mem</code> ที่รากโปรเจกต์ แล้วใส่ <code>default.jpg</code></li>
+    <li>เปิดเป็น static path ใน <code>server/index.js</code></li>
+    <li>ติดตั้ง <code>multer</code> (<code>npm install multer</code>) แล้วเขียนตัวรับไฟล์</li>
+  </ol>
+  ${code('server/index.js — เปิดโฟลเดอร์รูปให้เข้าถึงได้', serverIndex.split('\n').filter((line) => line.includes('express.static')).join('\n'), 'js')}
+  ${code('server/controllers/memberController.js — ตั้งค่า multer', memberController.slice(memberController.indexOf('// The photo is named'), memberController.indexOf('export async function deleteMemberPhoto')).trimEnd(), 'js')}
+  ${code('server/controllers/memberController.js — ตัวรับไฟล์และตัวลบรูป', [fn(memberController, 'uploadMemberPhoto'), '', fn(memberController, 'deleteMemberPhoto')].join('\n'), 'js')}
+  ${code('server/routes/memberRoute.js — สองเส้นทางที่เพิ่ม', `router.post("/members/uploadimg", requireLogin, memberC.uploadMemberPhoto);
+router.delete("/members/photo", requireLogin, memberC.deleteMemberPhoto);`, 'js')}
+  ${note('warn', 'ต่างจากเอกสารแลปตรงนี้', 'แลปตั้งชื่อไฟล์จาก <code>req.body.memEmail</code> ที่ส่งมากับฟอร์ม ใครก็แก้ค่านั้นเป็นอีเมลคนอื่นแล้วทับรูปคนอื่นได้ หรือใส่ <code>../..</code> เพื่อเขียนไฟล์นอกโฟลเดอร์ ในโปรเจกต์นี้ชื่อไฟล์มาจาก token (<code>req.member.memEmail</code>) กรองตัวอักษรที่ใช้ไม่ได้ทิ้ง จำกัดขนาด 5 MB และรับเฉพาะ jpeg / png / webp')}
+
+  <h3>Frontend</h3>
+  <p>หน้า <code>src/pages/PageMember.vue</code> แสดงรูป มีฟอร์มอัปโหลด ปุ่มลบรูป และอวาตาร์สำเร็จรูปให้เลือก</p>
+  ${code('PageMember.vue — ส่งไฟล์ด้วย FormData', fn(scriptOnly(pageMember), 'sendPhoto'), 'js')}
+  ${code('PageMember.vue — URL ของรูปและการกันแคช', scriptOnly(pageMember).split('\n').filter((line) => /photoUrl|photoStamp|photoPath\.value = member/.test(line)).join('\n'), 'js')}
+  ${note('tip', 'ทำไมต้องมี ?t=', 'ถ้าอัปโหลดรูปใหม่ทับชื่อไฟล์เดิม เบราว์เซอร์จะยังโชว์รูปเก่าจากแคช จึงต่อท้าย URL ด้วยเวลาปัจจุบัน (<code>?t=1735…</code>) ทุกครั้งที่อัปโหลดสำเร็จ URL เปลี่ยน เบราว์เซอร์จึงโหลดรูปใหม่')}
+  ${note('tip', 'ต่างจากแลป: ไม่ต้องเดานามสกุลไฟล์', 'แลปใช้ <code>new Image()</code> ลองโหลด <code>&lt;email&gt;.jpg</code> เพื่อดูว่ามีรูปไหม โปรเจกต์นี้เก็บนามสกุลจริง (png อัปโหลดมาก็เก็บเป็น .png) แล้วให้ <code>GET /members/detail</code> ตอบ <code>photo</code> เป็น path ของไฟล์จริงมาเลย หน้าเว็บจึงไม่ต้องเดา')}
+</section>
+
+<section>
+  <h2><span class="no">14</span>Lab 12: Deploy ด้วย NGINX</h2>
+  <ol>
+    <li>โหลด NGINX for Windows จาก <b>nginx.org/en/download.html</b> แตกไฟล์ไว้โฟลเดอร์ที่ต้องการ</li>
+    <li>ที่โปรเจกต์สั่ง <code>npm run build</code> จะได้โฟลเดอร์ <code>dist/</code></li>
+    <li>copy ทุกไฟล์ใน <code>dist/</code> ไปไว้ใน <code>&lt;nginx&gt;/html/</code></li>
+    <li>แก้ <code>&lt;nginx&gt;/conf/nginx.conf</code> ตามตัวอย่างด้านล่าง แล้วตรวจไวยากรณ์ด้วย <code>nginx -t</code></li>
+    <li>สั่ง <code>start nginx</code> แล้วเปิด <b>http://localhost</b> (ต้องรัน backend <code>npm run server</code> ไว้ด้วย)</li>
+  </ol>
+  ${code('nginx.conf (ส่วน server)', nginxConf.split('\n').filter((line) => !line.startsWith('#')).join('\n').trim(), 'nginx')}
+  ${note('warn', 'ห้ามลืม try_files', 'Vue Router ใช้ history mode ถ้าไม่ใส่ <code>try_files $uri $uri/ /index.html;</code> พอเปิด <code>localhost/cartlist</code> ตรง ๆ หรือกด refresh จะได้ 404 เพราะ NGINX หาไฟล์ชื่อ cartlist ไม่เจอ')}
+  ${code('server/index.js — CORS ต้องรับ origin ของ NGINX และ preview ด้วย', serverIndex.slice(serverIndex.indexOf('app.use(cors('), serverIndex.indexOf('app.use(express.json())')).trimEnd(), 'js')}
+  <table>
+    <tr><th style="width:30%">คำสั่ง</th><th>ความหมาย</th></tr>
+    <tr><td><code>start nginx</code></td><td>เริ่มทำงานแบบ background</td></tr>
+    <tr><td><code>nginx -s stop</code></td><td>หยุดทันที</td></tr>
+    <tr><td><code>nginx -s reload</code></td><td>โหลด config ใหม่โดยไม่หยุดบริการ</td></tr>
+    <tr><td><code>nginx -t</code></td><td>ตรวจไวยากรณ์ config ก่อนใช้จริง</td></tr>
+  </table>
+  ${note('tip', 'พอร์ต 80 ชนกับโปรแกรมอื่น', 'ถ้า <code>start nginx</code> แล้วเปิด localhost ไม่ขึ้น ให้ดูใน <code>&lt;nginx&gt;/logs/error.log</code> ส่วนใหญ่เกิดจากมีโปรแกรมอื่นจองพอร์ต 80 อยู่ แก้โดยเปลี่ยน <code>listen 80;</code> เป็นพอร์ตอื่น เช่น <code>8080</code> แล้วเพิ่ม origin นั้นใน CORS ด้วย')}
+</section>
+
+<section>
+  <h2><span class="no">15</span>ส่วนที่ทำเพิ่มนอกแลป</h2>
+  <p>ส่วนเหล่านี้ไม่มีในเอกสารแลป แต่อยู่ในโปรเจกต์แล้ว</p>
+  <table>
+    <tr><th style="width:26%">เรื่อง</th><th>รายละเอียด</th></tr>
+    <tr><td>ฟิลเตอร์ทุกหน้า</td><td>หน้าสินค้า (แบรนด์ ประเภท ช่วงราคา การเรียง) หน้าจัดการสินค้า (คำค้น แบรนด์ ประเภท ช่วงราคา) ประวัติคำสั่งซื้อ (รหัสตะกร้า สถานะ ช่วงวันที่ ช่วงยอดเงิน จำนวน) ตะกร้า (คำค้น การเรียง) และหน้าฐานข้อมูล (กรองชื่อตาราง ค้นหาในแถว เลือกคอลัมน์) ทั้งหมดกรองฝั่งเบราว์เซอร์จากข้อมูลที่โหลดมาแล้ว ไม่ยิง API เพิ่ม</td></tr>
+    <tr><td>ตัวเลือกแบบ custom</td><td><code>src/components/ui/SkySelect.vue</code> แทน <code>&lt;select&gt;</code> ทุกจุด รองรับคีย์บอร์ดครบ และ <code>SkyRange.vue</code> สำหรับช่วงราคา / ยอดเงิน เลือกจากช่วงสำเร็จรูปหรือกรอกเองก็ได้</td></tr>
+    <tr><td>ลบข้อมูลได้ทุกส่วน</td><td>สินค้า (<code>DELETE /products/:id</code> ลบไฟล์รูปตามไปด้วย) แถวของ products / brands / pdTypes ในหน้าฐานข้อมูล (<code>DELETE /database/rows/:table/:id</code> เฉพาะ admin และชื่อตารางมาจาก whitelist ในโค้ด) สมาชิก ตะกร้า สินค้าในตะกร้า และรูปโปรไฟล์</td></tr>
+    <tr><td>สองภาษา</td><td>ทุกข้อความอยู่ใน <code>src/i18n.js</code> ทั้ง en และ th รวมถึงข้อความที่ API ส่งกลับมา (API ส่งเป็นคีย์ เช่น <code>photo.uploaded</code> แล้วหน้าเว็บแปลเอง)</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2><span class="no">16</span>สิ่งที่ต่างจากเอกสารแลป</h2>
   <table>
     <tr><th style="width:34%">เอกสารแลป</th><th style="width:33%">โปรเจกต์นี้</th><th>เหตุผล</th></tr>
     <tr><td><code>bcrypt</code></td><td><code>bcryptjs</code></td><td>มีในโปรเจกต์แล้ว API เหมือนกัน ไม่ต้องคอมไพล์บน Windows</td></tr>
-    <tr><td>ไฟล์ <code>index.js</code>, <code>routes/</code>, <code>services/database.js</code></td><td><code>server.js</code>, <code>src/router/</code>, <code>database.js</code></td><td>โครงสร้างเดิมของโปรเจกต์</td></tr>
+    <tr><td>ไฟล์ <code>index.js</code>, <code>routes/</code>, <code>services/database.js</code></td><td><code>server/index.js</code>, <code>server/routes/</code>, <code>server/database.js</code></td><td>แยก backend ทั้งหมดไว้ในโฟลเดอร์ <code>server/</code></td></tr>
     <tr><td>ตัวแปร <code>DBSERVER</code>, <code>DBUSER</code>, …</td><td><code>DB_HOST</code>, <code>DB_USER</code>, …</td><td>ชื่อที่ <code>database.js</code> ใช้อยู่</td></tr>
     <tr><td><code>postMember</code> ส่ง <code>bodyData</code> กลับทั้งก้อน</td><td>ส่งกลับแค่อีเมล ชื่อ วันที่ และผล</td><td>ไม่ให้รหัสผ่านถูกส่งกลับไปใน response</td></tr>
     <tr><td><code>SECRET_KEY='thailandgogo'</code></td><td>ค่าสุ่ม 64 ตัวอักษร และ server ไม่ยอมเปิดถ้าไม่มี</td><td>เดา key ไม่ได้ = ปลอม token ไม่ได้</td></tr>
@@ -615,7 +750,9 @@ SECRET_KEY=ใส่ค่าสุ่มยาวๆ-ที่นี่`, 'env'
     <tr><td>ไม่ได้ตรวจสถานะตะกร้าตอนแก้ไข</td><td>ตะกร้าที่ยืนยันแล้วแก้ไม่ได้ (<code>canEditCart</code>)</td><td>คำสั่งซื้อที่ยืนยันแล้วไม่ควรเปลี่ยนยอดได้อีก</td></tr>
     <tr><td>ปุ่มลบตะกร้า / ยืนยันสั่งสินค้า มีแต่ <code>confirm()</code></td><td>ต่อกับ <code>delCart</code> และ <code>cfCart</code> จริง</td><td>ให้ปุ่มทำงานได้จริง</td></tr>
     <tr><td>ตะกร้าเก็บใน localStorage (ของเดิมในโปรเจกต์)</td><td>เก็บในฐานข้อมูลตาม Lab 11</td><td>ตะกร้าผูกกับสมาชิก ใช้ข้ามเครื่องได้ และมีประวัติคำสั่งซื้อ</td></tr>
-    <tr><td>ฟอร์ม Bootstrap ตามแลป</td><td>ดีไซน์ใหม่ 2 ธีม + 2 ภาษา</td><td>ส่วนที่ออกแบบเพิ่มในโปรเจกต์</td></tr>
+    <tr><td>ฟอร์ม Bootstrap ตามแลป</td><td>ดีไซน์ใหม่ + สลับภาษา ไทย/อังกฤษ</td><td>ส่วนที่ออกแบบเพิ่มในโปรเจกต์ (ถอด Bootstrap ออกแล้ว)</td></tr>
+    <tr><td>Lab 12: ชื่อไฟล์รูปจาก <code>req.body.memEmail</code></td><td>ชื่อไฟล์จาก token และกรองตัวอักษรก่อนใช้</td><td>กันการทับรูปคนอื่นและการเขียนไฟล์นอกโฟลเดอร์</td></tr>
+    <tr><td>Lab 12: บันทึกเป็น <code>.jpg</code> เสมอ และเดาว่ามีรูปไหมด้วย <code>new Image()</code></td><td>เก็บนามสกุลจริง และ <code>GET /members/detail</code> บอก path ของรูปมาเลย</td><td>ไฟล์ png ไม่ถูกตั้งชื่อผิดชนิด และหน้าเว็บไม่ต้องเดา</td></tr>
   </table>
 </section>
 
@@ -630,14 +767,14 @@ const browser = await chromium.launch({ executablePath: CHROME })
 const page = await browser.newPage()
 await page.goto('file:///' + htmlPath.replace(/\\/g, '/'), { waitUntil: 'networkidle' })
 await page.evaluate(() => document.fonts.ready)
-const outPath = path.join(OUT_DIR, 'Lab09-11-Guide.pdf')
+const outPath = path.join(OUT_DIR, 'Lab09-12-Guide.pdf')
 await page.pdf({
     path: outPath,
     format: 'A4',
     printBackground: true,
     displayHeaderFooter: true,
     headerTemplate: '<span></span>',
-    footerTemplate: '<div style="width:100%;padding:0 16mm;font:8pt sans-serif;color:#64748b;display:flex;justify-content:space-between"><span>KUSHOP · Lab 09–11 Guide</span><span><span class="pageNumber"></span> / <span class="totalPages"></span></span></div>',
+    footerTemplate: '<div style="width:100%;padding:0 16mm;font:8pt sans-serif;color:#64748b;display:flex;justify-content:space-between"><span>KUSHOP · Lab 09–12 Guide</span><span><span class="pageNumber"></span> / <span class="totalPages"></span></span></div>',
     margin: { top: '18mm', bottom: '20mm', left: '16mm', right: '16mm' }
 })
 await browser.close()

@@ -17,7 +17,7 @@
 import { ref } from 'vue'
 import axios from 'axios'
 import { t } from '../i18n.js'
-import AuthLayout from './AuthLayout.vue'
+import AuthLayout from '../components/layout/AuthLayout.vue'
 
 const memEmail = ref('')
 const memName = ref('')

@@ -27,9 +27,9 @@
 <script setup>
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '../stores/authStore.js'
-import { t } from '../i18n.js'
-import SkyIcon from './SkyIcon.vue'
+import { useAuthStore } from '../../stores/authStore.js'
+import { t } from '../../i18n.js'
+import SkyIcon from '../ui/SkyIcon.vue'
 import AppSwitches from './AppSwitches.vue'
 import CartInfo from './CartInfo.vue'
 

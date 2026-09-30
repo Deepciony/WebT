@@ -123,8 +123,8 @@ import axios from 'axios'
 import { t } from '../i18n.js'
 import { useAuthStore } from '../stores/authStore.js'
 import { useCartStore } from '../stores/cartStore.js'
-import SkySelect from './SkySelect.vue'
-import SkyRange from './SkyRange.vue'
+import SkySelect from '../components/ui/SkySelect.vue'
+import SkyRange from '../components/ui/SkyRange.vue'
 
 const carts = ref([])
 const loading = ref(true)

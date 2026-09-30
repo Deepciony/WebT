@@ -1,6 +1,6 @@
 import express from "express";
-import { deleteCartHistory, deleteMember, deleteRow, getDatabaseOverview } from "../../controllers/databaseController.js";
-import { requireLogin } from "../../controllers/authMiddleware.js";
+import { deleteCartHistory, deleteMember, deleteRow, getDatabaseOverview } from "../controllers/databaseController.js";
+import { requireLogin } from "../controllers/authMiddleware.js";
 
 const router = express.Router();
 

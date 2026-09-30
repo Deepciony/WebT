@@ -15,7 +15,7 @@
 
 <script setup>
 import AppSwitches from './AppSwitches.vue'
-import { t } from '../i18n.js'
+import { t } from '../../i18n.js'
 
 defineProps({
     heading: { type: String, required: true },

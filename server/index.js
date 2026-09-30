@@ -2,10 +2,10 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
-import productRoutes from "./src/router/productRoute.js";
-import databaseRoutes from "./src/router/databaseRoute.js";
-import memberRoutes from "./src/router/memberRoute.js";
-import cartRoutes from "./src/router/cartRoute.js";
+import productRoutes from "./routes/productRoute.js";
+import databaseRoutes from "./routes/databaseRoute.js";
+import memberRoutes from "./routes/memberRoute.js";
+import cartRoutes from "./routes/cartRoute.js";
 
 dotenv.config();
 

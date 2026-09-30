@@ -116,8 +116,8 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import axios from 'axios'
 import { t } from '../i18n.js'
-import SkySelect from './SkySelect.vue'
-import SkyRange from './SkyRange.vue'
+import SkySelect from '../components/ui/SkySelect.vue'
+import SkyRange from '../components/ui/SkyRange.vue'
 
 const products = ref([])
 const selectedId = ref(null)

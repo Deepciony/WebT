@@ -59,8 +59,8 @@
     import axios from 'axios';
     import { useCartStore } from '../stores/cartStore.js';
     import { t } from '../i18n.js';
-    import ProductCard from './ProductCard.vue';
-    import SkyIcon from './SkyIcon.vue';
+    import ProductCard from '../components/ui/ProductCard.vue';
+    import SkyIcon from '../components/ui/SkyIcon.vue';
 
     const product = ref([])
     const loading = ref(true)

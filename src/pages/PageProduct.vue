@@ -78,10 +78,10 @@
     import axios from 'axios';
     import { useCartStore } from '../stores/cartStore.js';
     import { t } from '../i18n.js';
-    import ProductCard from './ProductCard.vue';
-    import SkyIcon from './SkyIcon.vue';
-    import SkySelect from './SkySelect.vue';
-    import SkyRange from './SkyRange.vue';
+    import ProductCard from '../components/ui/ProductCard.vue';
+    import SkyIcon from '../components/ui/SkyIcon.vue';
+    import SkySelect from '../components/ui/SkySelect.vue';
+    import SkyRange from '../components/ui/SkyRange.vue';
 
     const product = ref([])
     const stext = ref('')

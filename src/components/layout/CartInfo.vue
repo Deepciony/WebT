@@ -10,9 +10,9 @@
 
 <script setup>
 import { computed, onMounted } from 'vue'
-import { useCartStore } from '../stores/cartStore.js'
-import { t } from '../i18n.js'
-import SkyIcon from './SkyIcon.vue'
+import { useCartStore } from '../../stores/cartStore.js'
+import { t } from '../../i18n.js'
+import SkyIcon from '../ui/SkyIcon.vue'
 
 const cartStore = useCartStore()
 

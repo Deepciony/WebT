@@ -1,6 +1,6 @@
 <script setup>
 import { useRoute } from 'vue-router';
-import MainMenu from './components/MainMenu.vue';
+import MainMenu from './components/layout/MainMenu.vue';
 
 const route = useRoute();
 </script>

@@ -4,8 +4,8 @@
 
 <script setup>
 import { useRouter } from 'vue-router'
-import { t } from '../i18n.js'
-import { useAuthStore } from '../stores/authStore.js'
+import { t } from '../../i18n.js'
+import { useAuthStore } from '../../stores/authStore.js'
 
 // ponytail: dev-only shortcut while no DB is running; only imported when import.meta.env.DEV.
 // The fake session lives in memory, so a page reload signs you out again.

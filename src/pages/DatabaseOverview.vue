@@ -84,7 +84,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import axios from 'axios'
 import { t } from '../i18n.js'
 import { useAuthStore } from '../stores/authStore.js'
-import SkySelect from './SkySelect.vue'
+import SkySelect from '../components/ui/SkySelect.vue'
 
 const authStore = useAuthStore()
 
