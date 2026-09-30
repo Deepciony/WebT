@@ -1,5 +1,5 @@
 <template>
-    <div v-if="isSky" class="sk-page">
+    <div class="sk-page">
         <section class="hero sk-panel">
             <div class="hero-text">
                 <p class="sk-kicker">{{ t('store.name') }}</p>
@@ -52,33 +52,12 @@
         </section>
     </div>
 
-    <template v-else>
-        <h1>{{ t('home.classicWelcome') }}</h1>
-        <div class="row">
-            <div v-for="(pd,pdId) in product" :key="pdId" class="col-lg-4 col-md-6 col-sm-12">
-                <div class="card mt-3" style="width: 18rem; background-color: #EEEEEE; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
-                    <img :src="pd.logosrc ? `http://localhost:3000${pd.logosrc}` : `http://localhost:3000/products/${pd.pdId}/image`" class="card-img-top p-2" :alt="t('product.imgAlt')">
-                    <div class="card-body">
-                        <h5 class="card-title">{{ pd.pdName }}</h5>
-                        <p class="card-text">{{ pd.brand?.brandName || t('product.noBrand') }} - ${{ pd.pdPrice }}</p>
-                        <router-link :to="{ name: 'ProductShow', params: { pdId: pd.pdId } }" class="btn btn-outline-primary me-2">
-                            <i class="bi bi-search"></i> {{ t('product.detail') }}
-                        </router-link>
-                        <button class="btn btn-primary" type="button" @click="addProduct(pd)">
-                            <i class="bi bi-cart"></i> {{ t('product.add') }}
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </template>
 </template>
 
 <script setup>
     import { onMounted, ref } from 'vue';
     import axios from 'axios';
     import { useCartStore } from '../stores/cartStore.js';
-    import { isSky } from '../stores/theme.js';
     import { t } from '../i18n.js';
     import ProductCard from './ProductCard.vue';
     import SkyIcon from './SkyIcon.vue';

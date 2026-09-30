@@ -1,7 +1,7 @@
 <template>
-    <div class="segment-switch" :class="isSky ? 'is-sky' : 'btn-group btn-group-sm'" role="group" :aria-label="label">
+    <div class="segment-switch is-sky" role="group" :aria-label="label">
         <button v-for="option in options" :key="option.value" type="button"
-            :class="isSky ? { active: modelValue === option.value } : ['btn', modelValue === option.value ? 'btn-dark' : 'btn-outline-dark']"
+            :class="{ active: modelValue === option.value }"
             :aria-pressed="modelValue === option.value" :lang="option.lang"
             @click="emit('update:modelValue', option.value)">
             {{ option.label }}
@@ -10,7 +10,6 @@
 </template>
 
 <script setup>
-import { isSky } from '../stores/theme.js'
 
 defineProps({
     label: { type: String, required: true },

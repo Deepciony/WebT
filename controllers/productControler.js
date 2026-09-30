@@ -240,6 +240,38 @@ export async function getThreeProduct(req, res) {
     }
 }
 
+export async function deleteProduct(req, res) {
+    const productId = clean(req.params.id);
+    if (!productId) {
+        return res.status(400).json({ error: 'manage.idRequired' });
+    }
+    try {
+        const result = await database.query({
+            text: `DELETE FROM products WHERE "pdId" = $1 RETURNING "pdId"`,
+            values: [productId]
+        });
+        if (!result.rowCount) {
+            return res.status(404).json({ error: 'manage.notFound' });
+        }
+        // the picture is named after the product, so it goes with it
+        try {
+            const stem = imageStem(productId);
+            const files = await fs.readdir(imageDirectory);
+            await Promise.all(files
+                .filter((file) => path.parse(file).name === stem)
+                .map((file) => fs.unlink(path.join(imageDirectory, file))));
+        } catch (imageError) {
+            console.log(imageError.message);
+        }
+        return res.status(200).json({ deleted: result.rows[0].pdId });
+    } catch (err) {
+        // 23503: some cart still points at this product
+        if (err.code === '23503') return res.status(409).json({ error: 'manage.deleteInUse' });
+        console.error(err);
+        return res.status(500).json({ error: 'manage.deleteFail' });
+    }
+}
+
 export async function getSearchProduct(req, res) {
     console.log(`GET / searchProduct id=${req.params.id} request received`)
     try {

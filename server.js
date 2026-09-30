@@ -18,12 +18,19 @@ const PORT = Number(process.env.PORT || 3000);
 
 // Whitelist the frontend and allow cookies to travel with requests
 app.use(cors({
-    origin: ["http://localhost:5173", "http://127.0.0.1:5173"],
+    origin: [
+        "http://localhost:5173", "http://127.0.0.1:5173",
+        // vite preview and the nginx build (port 80)
+        "http://localhost:4173", "http://127.0.0.1:4173",
+        "http://localhost", "http://127.0.0.1"
+    ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true
 }));
 app.use(express.json());
 app.use("/img_pd", express.static("img_pd"));
+// member photos
+app.use("/img_mem", express.static("img_mem"));
 // Must run before the routers so req.cookies is filled in
 app.use(cookieParser());
 app.use(productRoutes);

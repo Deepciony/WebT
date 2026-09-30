@@ -179,3 +179,124 @@
   }
   :root[data-theme="sky"] .sk-card-lift:hover { transform: none; }
 }
+
+/* Filter bars (shared by shop, orders, manage, database) */
+:root[data-theme="sky"] .sk-filters {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  gap: 14px 16px;
+  margin: 0 0 24px;
+  padding: 16px 20px;
+  background: var(--surface);
+  border: 1px solid var(--outline);
+  border-radius: var(--r-card);
+}
+:root[data-theme="sky"] .sk-filters > :is(label, .filter-field) {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 14px;
+  font-weight: 700;
+}
+:root[data-theme="sky"] .sk-filters :is(input, select) {
+  min-height: 44px;
+  margin: 0;
+  padding: 8px 12px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--outline-strong);
+  border-radius: 12px;
+  outline: 0;
+  font-family: var(--font-body);
+  font-size: 16px;
+}
+:root[data-theme="sky"] .sk-filters :is(input, select):focus {
+  border-color: var(--sky-deep);
+  box-shadow: 0 0 0 3px var(--sky-soft);
+}
+:root[data-theme="sky"] .sk-filters .grow { flex: 1 1 0; max-width: none; }
+:root[data-theme="sky"] .sk-filters .search-field input { min-height: 0; padding: 0; border: 0; border-radius: 0; }
+:root[data-theme="sky"] .sk-filters .search-field input:focus { box-shadow: none; }
+:root[data-theme="sky"] .sk-filters .filter-label { color: var(--ink-muted); font-size: 14px; font-weight: 700; }
+:root[data-theme="sky"] .sk-filters > .sk-btn { flex: none; margin-top: 26px; }
+:root[data-theme="sky"] .sk-filters > .num { flex: 1.25 1 0; }
+:root[data-theme="sky"] .sk-filters > .search-field-group { flex: 2.4 1 0; min-width: 260px; }
+:root[data-theme="sky"] .sk-filters .num input,
+:root[data-theme="sky"] .sk-filters .num input[type="date"] { width: 100%; min-width: 0; }
+:root[data-theme="sky"] .sk-filters .sk-btn { min-height: 44px; padding: 0 18px; font-size: 16px; white-space: nowrap; }
+:root[data-theme="sky"] .sk-filter-count { margin: 0 0 20px; color: var(--ink-muted); font-size: 16px; }
+:root[data-theme="sky"] .sk-filter-count strong { color: var(--ink); }
+/* too many controls for one row on a narrow screen: let them wrap again */
+@media (max-width: 1180px) {
+  :root[data-theme="sky"] .sk-filters { flex-wrap: wrap; }
+  :root[data-theme="sky"] .sk-filters > :is(label, .filter-field) { flex: 1 1 200px; }
+}
+@media (max-width: 640px) {
+  :root[data-theme="sky"] .sk-filters { gap: 12px; padding: 16px; }
+  :root[data-theme="sky"] .sk-filters > :is(label, .filter-field),
+  :root[data-theme="sky"] .sk-filters .sk-btn { flex: 1 1 100%; width: 100%; max-width: none; }
+  :root[data-theme="sky"] .sk-filters > .sk-btn { margin-top: 0; }
+}
+
+/* Filters inside a data card */
+:root[data-theme="sky"] .database-table .row-filters { margin: 0 24px 16px; padding: 12px 16px; background: var(--bg); }
+:root[data-theme="sky"] .database-table .row-count { align-self: center; color: var(--ink-muted); font-size: 14px; }
+:root[data-theme="sky"] .manage-list .list-filters { margin: 0 24px 16px; padding: 12px 16px; background: var(--bg); }
+/* the list sits in a narrow column, so its filters wrap instead of fighting for one row */
+:root[data-theme="sky"] .manage-list .list-filters { flex-wrap: wrap; }
+:root[data-theme="sky"] .manage-list .list-filters > :is(label, .filter-field) { flex: 1 1 165px; min-width: 165px; max-width: none; }
+:root[data-theme="sky"] .manage-list .list-filters > .sk-btn { flex: 1 1 165px; margin-top: 0; }
+
+/* File picker: the native control is hidden but still focusable */
+:root[data-theme="sky"] .sk-file,
+:root[data-theme="sky"] label.sk-file {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px;
+  background: var(--surface);
+  border: 1px solid var(--outline-strong);
+  border-radius: 12px;
+  cursor: pointer;
+}
+:root[data-theme="sky"] .sk-file:hover { border-color: var(--sky-deep); }
+:root[data-theme="sky"] .sk-file:focus-within { border-color: var(--sky-deep); box-shadow: 0 0 0 3px var(--sky-soft); }
+:root[data-theme="sky"] .sk-file input[type="file"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  opacity: 0;
+}
+:root[data-theme="sky"] .sk-file-btn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 16px;
+  color: #fff;
+  background: var(--sky);
+  border-radius: 9px;
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+:root[data-theme="sky"] .sk-file:hover .sk-file-btn { background: var(--sky-deep); }
+:root[data-theme="sky"] .sk-file-name {
+  overflow: hidden;
+  min-width: 0;
+  color: var(--ink-muted);
+  font-size: 15px;
+  font-weight: 400;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+:root[data-theme="sky"] .sk-file-name.picked { color: var(--ink); font-weight: 700; }

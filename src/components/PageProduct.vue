@@ -1,23 +1,47 @@
 <template>
-    <div v-if="isSky" class="sk-page">
+    <div class="sk-page">
         <header class="shop-head">
             <div class="sk-head">
                 <p class="sk-kicker">{{ t('shop.kicker') }}</p>
                 <h1>{{ t('shop.title') }}</h1>
                 <p>{{ t('shop.lead') }}</p>
             </div>
-            <form class="search" role="search" @submit.prevent="searchProducts">
-                <label class="search-field">
-                    <SkyIcon name="search" class="search-icon" />
-                    <input v-model="stext" type="search" :placeholder="t('shop.placeholder')">
-                </label>
-                <button class="sk-btn" type="submit">{{ t('shop.search') }}</button>
-            </form>
         </header>
+
+        <div class="sk-filters" role="group" :aria-label="t('filter.title')">
+            <div class="filter-field grow">
+                <span class="filter-label">{{ t('filter.brand') }}</span>
+                <SkySelect v-model="filters.brandId" :options="brandOptions" :aria-label="t('filter.brand')" />
+            </div>
+            <div class="filter-field grow">
+                <span class="filter-label">{{ t('filter.type') }}</span>
+                <SkySelect v-model="filters.pdTypeId" :options="typeOptions" :aria-label="t('filter.type')" />
+            </div>
+            <div class="filter-field grow">
+                <span class="filter-label">{{ t('filter.price') }}</span>
+                <SkyRange v-model:min="filters.minPrice" v-model:max="filters.maxPrice" :presets="pricePresets" :aria-label="t('filter.price')" />
+            </div>
+            <div class="filter-field grow">
+                <span class="filter-label">{{ t('filter.sort') }}</span>
+                <SkySelect v-model="filters.sort" :options="sortOptions" :aria-label="t('filter.sort')" />
+            </div>
+            <form class="filter-field search-field-group" role="search" @submit.prevent="searchProducts">
+                <span class="filter-label">{{ t('filter.keyword') }}</span>
+                <div class="search-row">
+                    <label class="search-field">
+                        <SkyIcon name="search" class="search-icon" />
+                        <input v-model="stext" type="search" :placeholder="t('shop.placeholder')" :aria-label="t('shop.searchLabel')">
+                    </label>
+                    <button class="sk-btn" type="submit">{{ t('shop.search') }}</button>
+                </div>
+            </form>
+            <button class="sk-btn sk-btn-ghost" type="button" :disabled="!filterActive" @click="resetFilters">{{ t('filter.reset') }}</button>
+        </div>
 
         <p v-if="!loading && !error" class="result-count" aria-live="polite">
             <template v-if="searched">{{ t('shop.resultsFor', { q: searched }) }}</template>
-            {{ t('shop.found') }} <strong class="sk-mono">{{ product.length }}</strong> {{ t('shop.items') }}
+            {{ t('shop.found') }} <strong class="sk-mono">{{ shown.length }}</strong> {{ t('shop.items') }}
+            <span v-if="shown.length !== product.length">({{ t('filter.showing', { n: shown.length, total: product.length }) }})</span>
             <button v-if="searched" class="clear-search" type="button" @click="clearSearch">{{ t('shop.clear') }}</button>
         </p>
 
@@ -30,8 +54,14 @@
             <p>{{ t('common.loadFailText') }}</p>
             <button class="sk-btn" type="button" @click="searchProducts"><SkyIcon name="refresh" /> {{ t('common.retry') }}</button>
         </div>
-        <div v-else-if="product.length" class="product-grid">
-            <ProductCard v-for="pd in product" :key="pd.pdId" :product="pd" />
+        <div v-else-if="shown.length" class="product-grid">
+            <ProductCard v-for="pd in shown" :key="pd.pdId" :product="pd" />
+        </div>
+        <div v-else-if="product.length" class="sk-empty">
+            <span class="sk-empty-icon"><SkyIcon name="search" :size="32" /></span>
+            <h2>{{ t('filter.none') }}</h2>
+            <p>{{ t('filter.noneText') }}</p>
+            <button class="sk-btn" type="button" @click="resetFilters">{{ t('filter.reset') }}</button>
         </div>
         <div v-else class="sk-empty">
             <span class="sk-empty-icon"><SkyIcon name="search" :size="32" /></span>
@@ -41,46 +71,17 @@
         </div>
     </div>
 
-    <template v-else>
-        <form @submit.prevent="searchProducts">
-            <div class="row">
-                <div class="h1 col-md-6 col-sm-12text-danger">{{ t('shop.title') }}</div>
-                <div class="col-md-4 col-sm-6">
-                    <input type="text" class="form-control" v-model="stext" :placeholder="t('shop.placeholder')">
-                </div>
-                <div class="col">
-                    <button class="btn btn-primary" type="submit">{{ t('shop.search') }}</button>
-                </div>
-            </div>
-        </form>
-        <div class="row">
-            <div v-for="(pd,pdId) in product" :key="pdId" class="col-lg-4 col-md-6 col-sm-12">
-                <div class="card mt-3" style="width: 18rem; background-color: #EEEEEE; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
-                    <img :src="pd.logosrc ? `http://localhost:3000${pd.logosrc}` : `http://localhost:3000/products/${pd.pdId}/image`" class="card-img-top p-2" :alt="t('product.imgAlt')">
-                    <div class="card-body">
-                        <h5 class="card-title">{{ pd.pdName }}</h5>
-                        <p class="card-text">{{ pd.brand?.brandName || t('product.noBrand') }} - ${{ pd.pdPrice }}</p>
-                        <router-link :to="{ name: 'ProductShow', params: { pdId: pd.pdId } }" class="btn btn-outline-primary me-2">
-                            <i class="bi bi-search"></i> {{ t('product.detail') }}
-                        </router-link>
-                        <button class="btn btn-primary" type="button" @click="addProduct(pd)">
-                            <i class="bi bi-cart"></i> {{ t('product.add') }}
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </template>
 </template>
 
 <script setup>
-    import { onMounted, ref } from 'vue';
+    import { computed, onMounted, reactive, ref } from 'vue';
     import axios from 'axios';
     import { useCartStore } from '../stores/cartStore.js';
-    import { isSky } from '../stores/theme.js';
     import { t } from '../i18n.js';
     import ProductCard from './ProductCard.vue';
     import SkyIcon from './SkyIcon.vue';
+    import SkySelect from './SkySelect.vue';
+    import SkyRange from './SkyRange.vue';
 
     const product = ref([])
     const stext = ref('')
@@ -95,6 +96,54 @@
             console.log(err.message)
         }
     }
+
+    const emptyFilters = () => ({ brandId: '', pdTypeId: '', minPrice: '', maxPrice: '', sort: 'id' })
+    const filters = reactive(emptyFilters())
+    const resetFilters = () => Object.assign(filters, emptyFilters())
+    const filterActive = computed(() => Object.entries(emptyFilters()).some(([key, value]) => filters[key] !== value))
+    const pricePresets = [{ max: 100 }, { min: 100, max: 500 }, { min: 500, max: 1000 }, { min: 1000, max: 5000 }, { min: 5000 }]
+
+    // options come from the rows we already have, so no extra request
+    const optionsFrom = (objectKey, idKey, nameKey) => {
+        const found = new Map()
+        for (const pd of product.value) {
+            const id = pd[objectKey]?.[idKey] ?? pd[idKey]
+            if (id && !found.has(id)) found.set(id, pd[objectKey]?.[nameKey] || id)
+        }
+        const list = [...found].map(([value, label]) => ({ value, label })).sort((a, b) => String(a.label).localeCompare(String(b.label)))
+        return [{ value: '', label: t('filter.all') }, ...list]
+    }
+    const brandOptions = computed(() => optionsFrom('brand', 'brandId', 'brandName'))
+    const typeOptions = computed(() => optionsFrom('pdt', 'pdTypeId', 'pdTypeName'))
+    const sortOptions = computed(() => [
+        { value: 'id', label: t('filter.sortId') },
+        { value: 'nameAsc', label: t('filter.sortNameAsc') },
+        { value: 'nameDesc', label: t('filter.sortNameDesc') },
+        { value: 'priceAsc', label: t('filter.sortPriceAsc') },
+        { value: 'priceDesc', label: t('filter.sortPriceDesc') }
+    ])
+
+    const limit = (value) => value === '' || value === null ? null : (Number.isFinite(Number(value)) ? Number(value) : null)
+    const sorters = {
+        id: (a, b) => String(a.pdId).localeCompare(String(b.pdId), undefined, { numeric: true }),
+        nameAsc: (a, b) => String(a.pdName).localeCompare(String(b.pdName)),
+        nameDesc: (a, b) => String(b.pdName).localeCompare(String(a.pdName)),
+        priceAsc: (a, b) => Number(a.pdPrice) - Number(b.pdPrice),
+        priceDesc: (a, b) => Number(b.pdPrice) - Number(a.pdPrice)
+    }
+    const shown = computed(() => {
+        const min = limit(filters.minPrice)
+        const max = limit(filters.maxPrice)
+        const rows = product.value.filter((pd) => {
+            if (filters.brandId && (pd.brand?.brandId ?? pd.brandId) !== filters.brandId) return false
+            if (filters.pdTypeId && (pd.pdt?.pdTypeId ?? pd.pdTypeId) !== filters.pdTypeId) return false
+            const price = Number(pd.pdPrice)
+            if (min !== null && price < min) return false
+            if (max !== null && price > max) return false
+            return true
+        })
+        return rows.sort(sorters[filters.sort] || sorters.id)
+    })
 
     const searchProducts = async () => {
         const keyword = stext.value.trim()
@@ -126,35 +175,23 @@
 </script>
 
 <style scoped>
-.shop-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 24px; }
+.shop-head { margin-bottom: 24px; }
 .shop-head .sk-head { margin-bottom: 0; }
-.search {
-    --search-height: 40px;
-    display: flex;
-    flex: 0 1 700px;
-    align-items: center;
-    gap: 14px;
-    max-width: 700px;
-    width: 100%;
-    margin: 0;
-}
+.sk-filters .search-field-group { flex: 2.2 1 0; min-width: 240px; }
+.search-row { display: flex; align-items: center; gap: 10px; }
 .search-field {
     position: relative;
     flex: 1 1 auto;
     min-width: 0;
-    width: auto;
-    height: var(--search-height);
+    height: 44px;
     margin: 0;
     padding: 0 12px 0 38px;
-    background: #fff;
-    border: 1px solid rgba(15, 23, 42, .2);
-    border-radius: 12px !important;
+    background: var(--surface);
+    border: 1px solid var(--outline-strong);
+    border-radius: 12px;
     box-sizing: border-box;
 }
-.search-field:focus-within {
-    border-color: var(--sky-deep);
-    box-shadow: 0 0 0 3px var(--sky-soft);
-}
+.search-field:focus-within { border-color: var(--sky-deep); box-shadow: 0 0 0 3px var(--sky-soft); }
 .search-icon {
     position: absolute;
     top: 50%;
@@ -168,7 +205,8 @@
 .search-field input {
     display: block;
     width: 100%;
-    height: 38px;
+    height: 42px;
+    min-height: 0;
     margin: 0;
     padding: 0;
     color: var(--ink);
@@ -176,33 +214,24 @@
     border: 0;
     outline: 0;
     font-family: var(--font-body);
-    font-size: 14px;
+    font-size: 16px;
 }
-.search-field input::placeholder { color: rgba(71, 85, 105, .75); }
-.search-field input:focus,
-.search-field input:focus-visible { outline: none !important; box-shadow: none; }
-.search .sk-btn {
+.search-field input::placeholder { color: var(--ink-subtle); }
+.search-field input:focus, .search-field input:focus-visible { outline: none !important; box-shadow: none; }
+.search-row .sk-btn {
     flex: none;
-    width: auto;
-    min-width: 96px;
-    min-height: var(--search-height) !important;
-    height: var(--search-height) !important;
+    min-width: 88px;
+    min-height: 44px;
+    height: 44px;
     padding: 0 16px;
     color: #fff;
     background: var(--sky);
     border: 0;
-    border-radius: 12px !important;
-    box-sizing: border-box;
-    font-size: 14px;
+    border-radius: 12px;
+    font-size: 16px;
     font-weight: 700;
-    box-shadow: 0 5px 10px rgba(8, 127, 115, .14);
 }
-.search .sk-btn:hover,
-.search .sk-btn:focus-visible {
-    color: #fff;
-    background: var(--sky-deep);
-    border-color: var(--sky-deep);
-}
+.search-row .sk-btn:hover, .search-row .sk-btn:focus-visible { color: #fff; background: var(--sky-deep); }
 .result-count { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 0 0 24px; color: var(--ink-muted); }
 .result-count strong { color: var(--ink); }
 .clear-search { min-height: 44px; padding: 0 12px; color: var(--sky-deep); background: none; border: 0; border-radius: 12px; cursor: pointer; font-weight: 700; text-decoration: underline; }
@@ -211,10 +240,9 @@
 .skeleton-card { height: 440px; border-radius: var(--r-card); }
 
 @media (max-width: 640px) {
-    .search { flex-direction: column; align-items: stretch; max-width: 100%; }
-    .search-field { width: 100%; flex-basis: var(--search-height); }
-    .search .sk-btn { width: 100%; min-width: 0; }
-    .search .sk-btn { width: 100%; }
+    .sk-filters .search-field-group { flex: 1 1 100%; }
+    .search-row { flex-direction: column; align-items: stretch; }
+    .search-row .sk-btn { width: 100%; }
     .product-grid { gap: 20px; }
 }
 </style>

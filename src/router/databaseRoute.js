@@ -1,5 +1,5 @@
 import express from "express";
-import { deleteCartHistory, deleteMember, getDatabaseOverview } from "../../controllers/databaseController.js";
+import { deleteCartHistory, deleteMember, deleteRow, getDatabaseOverview } from "../../controllers/databaseController.js";
 import { requireLogin } from "../../controllers/authMiddleware.js";
 
 const router = express.Router();
@@ -7,5 +7,6 @@ const router = express.Router();
 router.get("/database/overview", requireLogin, getDatabaseOverview);
 router.delete("/database/members/:memEmail", requireLogin, deleteMember);
 router.delete("/database/carts/:cartId", requireLogin, deleteCartHistory);
+router.delete("/database/rows/:table/:id", requireLogin, deleteRow);
 
 export default router;

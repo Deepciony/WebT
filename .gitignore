@@ -38,3 +38,8 @@ __screenshots__/
 
 # Vite
 *.timestamp-*-*.mjs
+
+# Member photos people upload (keep only the shipped defaults)
+img_mem/*
+!img_mem/default.jpg
+!img_mem/avatar-*.jpg

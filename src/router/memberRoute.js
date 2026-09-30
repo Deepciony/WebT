@@ -9,5 +9,7 @@ router.get("/members/logout", memberC.logoutMember);
 router.put("/members/profile", requireLogin, memberC.updateMember);
 router.post("/members", memberC.postMember);
 router.post("/members/login", memberC.loginMember);
+router.post("/members/uploadimg", requireLogin, memberC.uploadMemberPhoto);
+router.delete("/members/photo", requireLogin, memberC.deleteMemberPhoto);
 
 export default router;

@@ -1,15 +1,10 @@
 <template>
     <section class="auth-page">
-        <div v-if="!isSky" class="auth-intro">
-            <p class="auth-kicker">{{ t('auth.kicker') }}</p>
-            <h1>{{ heading }}<br><em>{{ highlight }}</em></h1>
-            <p>{{ t('auth.intro') }}</p>
-        </div>
 
-        <AppSwitches v-if="isSky" class="auth-switches" />
+        <AppSwitches class="auth-switches" />
 
         <div class="auth-card sk-panel sk-form">
-            <div v-if="isSky" class="auth-brand">
+            <div class="auth-brand">
                 <img class="auth-brand-logo" src="http://localhost:3000/img_pd/LogoSRC.png" alt="KUSHOP">
                 <small>{{ t('store.name') }}</small>
             </div>
@@ -20,7 +15,6 @@
 
 <script setup>
 import AppSwitches from './AppSwitches.vue'
-import { isSky } from '../stores/theme.js'
 import { t } from '../i18n.js'
 
 defineProps({
@@ -31,11 +25,6 @@ defineProps({
 
 <style scoped>
 .auth-page { display: grid; grid-template-columns: 1fr minmax(340px, 440px); gap: 70px; align-items: center; min-height: 650px; padding: 50px 4%; background: linear-gradient(120deg, #f7f8f5, #eef5f0); }
-.auth-intro { max-width: 520px; }
-.auth-kicker { margin-bottom: 18px; color: #198754; font-size: 12px; font-weight: 700; letter-spacing: .16em; }
-.auth-intro h1 { margin: 0 0 20px; color: #2c3e50; font-size: clamp(42px, 6vw, 72px); line-height: .95; }
-.auth-intro h1 em { color: #198754; font-style: normal; }
-.auth-intro > p:last-child { max-width: 390px; color: #6b7780; font-size: 16px; }
 .auth-card { padding: 28px; background: #fff; border: 1px solid #dce5df; border-radius: 12px; box-shadow: 0 14px 35px rgba(44, 62, 80, .1); }
 .auth-card :slotted(h2) { margin: 0 0 22px; color: #2c3e50; font-size: 25px; }
 .auth-card :slotted(label) { display: block; margin-bottom: 15px; color: #47545b; font-size: 13px; font-weight: 700; }
@@ -45,7 +34,7 @@ defineProps({
 .auth-card :slotted(.auth-message) { margin: 17px 0 0; color: #198754; font-size: 13px; }
 .auth-card :slotted(.auth-message.error) { color: #c0392b; }
 .auth-card :slotted(.auth-switch-link) { display: block; margin-top: 18px; color: #198754; font-size: 13px; font-weight: 700; text-align: center; text-decoration: none; }
-@media (max-width: 760px) { .auth-page { grid-template-columns: 1fr; gap: 28px; min-height: auto; padding: 35px 20px 50px; } .auth-intro h1 { font-size: 48px; } }
+@media (max-width: 760px) { .auth-page { grid-template-columns: 1fr; gap: 28px; min-height: auto; padding: 35px 20px 50px; } }
 
 /* Skylearn: standalone auth page, card only */
 :root[data-theme="sky"] .auth-page {

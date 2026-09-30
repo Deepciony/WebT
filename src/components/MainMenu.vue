@@ -1,5 +1,5 @@
 <template>
-  <header v-if="isSky" class="sky-topbar">
+  <header class="sky-topbar">
     <div class="sky-topbar-inner">
       <router-link to="/" class="sky-brand" :aria-label="t('nav.homeAria')">
         <img class="sky-brand-logo" src="http://localhost:3000/img_pd/LogoSRC.png" alt="KUSHOP">
@@ -23,52 +23,10 @@
       </button>
     </div>
   </header>
-
-  <nav v-else class="navbar navbar-expand-lg bg-body-tertiary">
-    <div class="container-fluid">
-      <button
-        class="navbar-toggler" type="button" data-bs-toggle="collapse"
-        data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false"
-        aria-label="Toggle navigation"
-      >
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="navbarNav">
-        <ul class="navbar-nav">
-          <li class="nav-item">
-            <router-link to="/"><div class="nav-link">{{ t('nav.home') }}</div></router-link>
-          </li>
-          <li class="nav-item">
-            <router-link to="/product"><div class="nav-link">{{ t('nav.products') }}</div></router-link>
-          </li>
-          <li v-if="authStore.isLogin" class="nav-item">
-            <router-link to="/manage"><div class="nav-link">{{ t('nav.editData') }}</div></router-link>
-          </li>
-          <li v-if="authStore.isLogin" class="nav-item">
-            <router-link to="/database"><div class="nav-link">{{ t('nav.database') }}</div></router-link>
-          </li>
-          <li class="nav-item">
-            <CartInfo />
-          </li>
-          <li v-if="authStore.isLogin" class="nav-item">
-            <router-link to="/pagemember" style="text-decoration: none"><div class="nav-link fw-bold">{{ memName }}</div></router-link>
-          </li>
-          <li v-if="authStore.isLogin" class="nav-item">
-            <a href="#" style="text-decoration: none" @click.prevent="memLogout"><div class="nav-link fw-bold">{{ t('profile.logout') }}</div></a>
-          </li>
-          <li v-if="!authStore.isLogin" class="nav-item">
-            <router-link to="/login" style="text-decoration: none"><div class="nav-link">{{ t('nav.login') }}</div></router-link>
-          </li>
-        </ul>
-        <AppSwitches class="ms-auto py-2" />
-      </div>
-    </div>
-  </nav>
 </template>
 <script setup>
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { isSky } from '../stores/theme.js'
 import { useAuthStore } from '../stores/authStore.js'
 import { t } from '../i18n.js'
 import SkyIcon from './SkyIcon.vue'
@@ -121,7 +79,6 @@ const visibleLinks = computed(() => links.filter((link) =>
 }
 .sky-brand { display: inline-flex; flex: none; align-items: center; gap: 12px; min-height: 56px; color: var(--ink); text-decoration: none; }
 .sky-brand-logo { display: block; width: 152px; height: 48px; padding: 0; background: transparent !important; border: 0; border-radius: 0; box-shadow: none !important; object-fit: contain; object-position: left center; }
-.sky-brand-name { font-family: var(--font-brand); font-size: 24px; font-weight: 700; letter-spacing: .04em; }
 .sky-nav { display: flex; flex: 1; gap: 4px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
 .sky-nav-link {
   flex: none;
@@ -178,7 +135,7 @@ const visibleLinks = computed(() => links.filter((link) =>
 }
 @media (max-width: 560px) {
   .sky-topbar { position: static; }
-  .sky-brand-name, .sky-cart-label { display: none; }
+  .sky-cart-label { display: none; }
   .sky-cart { order: 1; margin-left: auto; padding: 0 14px; }
   .sky-logout { order: 1; }
   .sky-actions { order: 2; flex-basis: 100%; margin-left: 0; }

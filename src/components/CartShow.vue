@@ -21,7 +21,16 @@
 
             <div v-if="items.length" class="cart-layout">
                 <div class="cart-items">
-                    <article v-for="item in items" :key="item.pdId" class="cart-item sk-card">
+                    <div class="sk-filters" role="group" :aria-label="t('filter.title')">
+                        <label class="grow">{{ t('filter.keyword') }}<input v-model.trim="filters.keyword" type="search" :placeholder="t('filter.keywordPh')"></label>
+                        <div class="filter-field grow">
+                            <span class="filter-label">{{ t('filter.sort') }}</span>
+                            <SkySelect v-model="filters.sort" :options="sortOptions" :aria-label="t('filter.sort')" />
+                        </div>
+                        <button class="sk-btn sk-btn-ghost" type="button" :disabled="!filterActive" @click="resetFilters">{{ t('filter.reset') }}</button>
+                    </div>
+                    <p v-if="filterActive" class="sk-filter-count">{{ t('filter.showing', { n: shownItems.length, total: items.length }) }}</p>
+                    <article v-for="item in shownItems" :key="item.pdId" class="cart-item sk-card">
                         <img :src="`http://localhost:3000/products/${item.pdId}/image`" :alt="t('product.imgAlt')">
                         <div class="cart-item-info">
                             <small class="sk-mono">#{{ item.pdId }}</small>
@@ -35,8 +44,9 @@
                         </div>
                         <span v-else class="sk-mono cart-qty-fixed">×{{ item.qty }}</span>
                         <strong class="sk-mono">${{ (Number(item.price) * Number(item.qty)).toFixed(2) }}</strong>
-                        <button v-if="!cart.cartCf" class="remove-item" type="button" :disabled="busy" :aria-label="t('cart.remove', { name: item.pdName })" @click="removeItem(item)"><i v-if="!isSky" class="bi bi-x-lg"></i><template v-else>×</template></button>
+                        <button v-if="!cart.cartCf" class="remove-item" type="button" :disabled="busy" :aria-label="t('cart.remove', { name: item.pdName })" @click="removeItem(item)">×</button>
                     </article>
+                    <p v-if="!shownItems.length" class="cart-state">{{ t('filter.noRowMatch') }}</p>
                 </div>
 
                 <aside class="checkout-card sk-panel">
@@ -48,11 +58,9 @@
 
                     <template v-if="!cart.cartCf">
                         <button class="checkout-button sk-btn sk-btn-big sk-btn-block sk-btn-leaf" type="button" :disabled="busy" @click="confirmOrder">
-                            <i v-if="!isSky" class="bi bi-currency-dollar"></i>
                             {{ t('cartdb.confirm') }} <span>→</span>
                         </button>
                         <button class="delete-cart sk-btn sk-btn-block sk-btn-coral" type="button" :disabled="busy" @click="removeCart">
-                            <i v-if="!isSky" class="bi bi-cart-x-fill"></i>
                             {{ t('cartdb.delete') }}
                         </button>
                     </template>
@@ -82,12 +90,12 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import { useCartStore } from '../stores/cartStore.js'
-import { isSky } from '../stores/theme.js'
 import { t } from '../i18n.js'
+import SkySelect from './SkySelect.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -106,6 +114,32 @@ const confirmHost = computed(() => {
     const host = window.location.hostname || 'localhost'
     const port = window.location.port ? `:${window.location.port}` : ''
     return `${host}${port} says`
+})
+
+const emptyFilters = () => ({ keyword: '', sort: 'id' })
+const filters = reactive(emptyFilters())
+const resetFilters = () => Object.assign(filters, emptyFilters())
+const filterActive = computed(() => Object.entries(emptyFilters()).some(([key, value]) => filters[key] !== value))
+const sortOptions = computed(() => [
+    { value: 'id', label: t('filter.sortId') },
+    { value: 'nameAsc', label: t('filter.sortNameAsc') },
+    { value: 'priceDesc', label: t('filter.sortPriceDesc') },
+    { value: 'priceAsc', label: t('filter.sortPriceAsc') },
+    { value: 'qtyDesc', label: t('filter.sortQtyDesc') }
+])
+const sorters = {
+    id: (a, b) => String(a.pdId).localeCompare(String(b.pdId), undefined, { numeric: true }),
+    nameAsc: (a, b) => String(a.pdName).localeCompare(String(b.pdName)),
+    priceAsc: (a, b) => Number(a.price) - Number(b.price),
+    priceDesc: (a, b) => Number(b.price) - Number(a.price),
+    qtyDesc: (a, b) => Number(b.qty) - Number(a.qty)
+}
+// filters only change what is listed; the totals below stay over the whole cart
+const shownItems = computed(() => {
+    const keyword = filters.keyword.toLowerCase()
+    const rows = items.value.filter((item) => !keyword
+        || [item.pdId, item.pdName].some((field) => String(field ?? '').toLowerCase().includes(keyword)))
+    return rows.sort(sorters[filters.sort] || sorters.id)
 })
 
 const totalQty = computed(() => items.value.reduce((sum, item) => sum + Number(item.qty), 0))

@@ -2,6 +2,46 @@ import database from "../database.js";
 
 const tables = ["products", "brands", "members", "pdTypes", "carts"];
 
+// tables whose rows an admin may delete straight from the overview,
+// with the column that identifies a row. members and carts keep their own
+// handlers below because a member may also delete their own data.
+const deletableTables = {
+    products: "pdId",
+    brands: "brandId",
+    pdTypes: "pdTypeId"
+};
+
+export async function deleteRow(req, res) {
+    const table = String(req.params.table || "");
+    const id = typeof req.params.id === "string" ? req.params.id.trim() : "";
+    const key = Object.prototype.hasOwnProperty.call(deletableTables, table) ? deletableTables[table] : null;
+    if (!key) {
+        return res.status(400).json({ error: 'db.tableNotDeletable' });
+    }
+    if (!id) {
+        return res.status(400).json({ error: 'db.rowIdRequired' });
+    }
+    if (req.member?.dutyId !== 'admin') {
+        return res.status(403).json({ error: 'db.deleteRowNotAllowed' });
+    }
+    try {
+        // table and key come from the whitelist above, never from the request
+        const result = await database.query({
+            text: `DELETE FROM "${table}" WHERE "${key}" = $1 RETURNING "${key}"`,
+            values: [id]
+        });
+        if (!result.rowCount) {
+            return res.status(404).json({ error: 'db.rowNotFound' });
+        }
+        return res.status(200).json({ deleted: result.rows[0][key] });
+    } catch (err) {
+        if (err.code === '23503') return res.status(409).json({ error: 'db.rowInUse' });
+        console.error(err);
+        return res.status(500).json({ error: 'db.deleteRowFail' });
+    }
+}
+
+
 export async function deleteMember(req, res) {
     // requireLogin already verified the token cookie and filled req.member
     const memEmail = typeof req.params.memEmail === 'string' ? req.params.memEmail.trim() : '';

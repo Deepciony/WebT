@@ -1,8 +1,8 @@
 <template>
-    <router-link :to="target" class="cart-info" :class="isSky ? 'sky-cart' : 'nav-link'"
+    <router-link :to="target" class="cart-info sky-cart"
         :aria-label="t('nav.cartAria', { n: cartStore.theQty })">
-        <SkyIcon v-if="isSky" name="cart" :size="24" />
-        <span class="cart-info-label">{{ isSky || !cartStore.cartId ? t('nav.cart') : cartStore.cartId }}</span>
+        <SkyIcon name="cart" :size="24" />
+        <span class="cart-info-label">{{ t('nav.cart') }}</span>
         <span class="cart-info-badge sk-mono">{{ cartStore.theQty }}</span>
         <span v-if="cartStore.money > 0" class="cart-info-money sk-mono">${{ cartStore.money.toFixed(2) }}</span>
     </router-link>
@@ -11,7 +11,6 @@
 <script setup>
 import { computed, onMounted } from 'vue'
 import { useCartStore } from '../stores/cartStore.js'
-import { isSky } from '../stores/theme.js'
 import { t } from '../i18n.js'
 import SkyIcon from './SkyIcon.vue'
 

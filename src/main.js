@@ -5,7 +5,6 @@ import App from './App.vue'
 import router from './router'
 import './assets/main.css'
 import './assets/skylearn.css'
-import './stores/theme.js'
 
 // Send the auth cookie with every API request
 axios.defaults.withCredentials = true

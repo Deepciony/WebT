@@ -37,7 +37,29 @@
             </aside>
         </div>
 
-        <div v-else-if="carts.length" class="orders-table sk-card">
+        <template v-else-if="carts.length">
+            <div class="sk-filters" role="group" :aria-label="t('filter.title')">
+                <label class="grow">{{ t('filter.cartId') }}<input v-model.trim="filters.keyword" type="search" :placeholder="t('filter.rowSearchPh')"></label>
+                <div class="filter-field grow">
+                    <span class="filter-label">{{ t('filter.status') }}</span>
+                    <SkySelect v-model="filters.status" :options="statusOptions" :aria-label="t('filter.status')" />
+                </div>
+                <label class="num">{{ t('filter.dateFrom') }}<input v-model="filters.from" type="date"></label>
+                <label class="num">{{ t('filter.dateTo') }}<input v-model="filters.to" type="date"></label>
+                <div class="filter-field grow">
+                    <span class="filter-label">{{ t('filter.amount') }}</span>
+                    <SkyRange v-model:min="filters.minAmount" v-model:max="filters.maxAmount" :presets="amountPresets" :aria-label="t('filter.amount')" />
+                </div>
+                <label class="num">{{ t('filter.minQty') }}<input v-model="filters.minQty" type="number" min="0" step="1" placeholder="0"></label>
+                <div class="filter-field grow">
+                    <span class="filter-label">{{ t('filter.sort') }}</span>
+                    <SkySelect v-model="filters.sort" :options="sortOptions" :aria-label="t('filter.sort')" />
+                </div>
+                <button class="sk-btn sk-btn-ghost" type="button" :disabled="!filterActive" @click="resetFilters">{{ t('filter.reset') }}</button>
+            </div>
+            <p class="sk-filter-count">{{ t('filter.showing', { n: shown.length, total: carts.length }) }}</p>
+
+            <div v-if="shown.length" class="orders-table sk-card">
             <table>
                 <thead>
                     <tr>
@@ -50,7 +72,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="cart in carts" :key="cart.cartId">
+                    <tr v-for="cart in shown" :key="cart.cartId">
                         <td class="sk-mono">{{ cart.row_number }}</td>
                         <td>
                             <router-link :to="`/cartshow/${cart.cartId}`" class="sk-mono order-link">{{ cart.cartId }}</router-link>
@@ -59,16 +81,21 @@
                         <td class="align-center sk-mono">{{ cart.sqty ?? 0 }}</td>
                         <td class="align-right sk-mono">${{ Number(cart.sprice ?? 0).toFixed(2) }}</td>
                         <td class="align-center">
-                            <span v-if="isSky" class="status" :class="cart.cartCf ? 'done' : 'open'">
+                            <span class="status" :class="cart.cartCf ? 'done' : 'open'">
                                 {{ cart.cartCf ? t('cartdb.confirmed') : t('cartdb.open') }}
                             </span>
-                            <i v-else class="bi" :class="cart.cartCf ? 'bi-check-lg text-success' : 'bi-dash'"
-                                :title="cart.cartCf ? t('cartdb.confirmed') : t('cartdb.open')"></i>
                         </td>
                     </tr>
                 </tbody>
             </table>
-        </div>
+            </div>
+            <div v-else class="sk-empty">
+                <span class="sk-empty-icon">○</span>
+                <h2>{{ t('filter.none') }}</h2>
+                <p>{{ t('filter.noneText') }}</p>
+                <button class="sk-btn" type="button" @click="resetFilters">{{ t('filter.reset') }}</button>
+            </div>
+        </template>
 
         <div v-else class="sk-empty">
             <span class="sk-empty-icon">○</span>
@@ -91,12 +118,13 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import axios from 'axios'
 import { t } from '../i18n.js'
-import { isSky } from '../stores/theme.js'
 import { useAuthStore } from '../stores/authStore.js'
 import { useCartStore } from '../stores/cartStore.js'
+import SkySelect from './SkySelect.vue'
+import SkyRange from './SkyRange.vue'
 
 const carts = ref([])
 const loading = ref(true)
@@ -105,6 +133,53 @@ const authStore = useAuthStore()
 const cartStore = useCartStore()
 const guestQty = computed(() => cartStore.guestItems.reduce((sum, item) => sum + Number(item.qty), 0))
 const guestTotal = computed(() => cartStore.guestItems.reduce((sum, item) => sum + Number(item.price) * Number(item.qty), 0))
+
+const emptyFilters = () => ({ keyword: '', status: '', from: '', to: '', minAmount: '', maxAmount: '', minQty: '', sort: 'dateDesc' })
+const filters = reactive(emptyFilters())
+const resetFilters = () => Object.assign(filters, emptyFilters())
+const filterActive = computed(() => Object.entries(emptyFilters()).some(([key, value]) => filters[key] !== value))
+
+const limit = (value) => value === '' || value === null ? null : (Number.isFinite(Number(value)) ? Number(value) : null)
+const amountPresets = [{ max: 500 }, { min: 500, max: 2000 }, { min: 2000, max: 10000 }, { min: 10000 }]
+const statusOptions = computed(() => [
+    { value: '', label: t('filter.all') },
+    { value: 'open', label: t('filter.statusOpen') },
+    { value: 'done', label: t('filter.statusDone') }
+])
+const sortOptions = computed(() => [
+    { value: 'dateDesc', label: t('filter.sortDateDesc') },
+    { value: 'dateAsc', label: t('filter.sortDateAsc') },
+    { value: 'amountDesc', label: t('filter.sortAmountDesc') },
+    { value: 'amountAsc', label: t('filter.sortAmountAsc') },
+    { value: 'qtyDesc', label: t('filter.sortQtyDesc') }
+])
+const sorters = {
+    dateDesc: (a, b) => new Date(b.cartDate) - new Date(a.cartDate),
+    dateAsc: (a, b) => new Date(a.cartDate) - new Date(b.cartDate),
+    amountDesc: (a, b) => Number(b.sprice ?? 0) - Number(a.sprice ?? 0),
+    amountAsc: (a, b) => Number(a.sprice ?? 0) - Number(b.sprice ?? 0),
+    qtyDesc: (a, b) => Number(b.sqty ?? 0) - Number(a.sqty ?? 0)
+}
+const shown = computed(() => {
+    const keyword = filters.keyword.toLowerCase()
+    const minAmount = limit(filters.minAmount)
+    const maxAmount = limit(filters.maxAmount)
+    const minQty = limit(filters.minQty)
+    const rows = carts.value.filter((cart) => {
+        if (keyword && !String(cart.cartId).toLowerCase().includes(keyword)) return false
+        if (filters.status === 'open' && cart.cartCf) return false
+        if (filters.status === 'done' && !cart.cartCf) return false
+        const day = formattedDate(cart.cartDate)
+        if (filters.from && day < filters.from) return false
+        if (filters.to && day > filters.to) return false
+        const amount = Number(cart.sprice ?? 0)
+        if (minAmount !== null && amount < minAmount) return false
+        if (maxAmount !== null && amount > maxAmount) return false
+        if (minQty !== null && Number(cart.sqty ?? 0) < minQty) return false
+        return true
+    })
+    return rows.sort(sorters[filters.sort] || sorters.dateDesc)
+})
 
 const openLoginNotice = () => {
     loginNotice.value = true

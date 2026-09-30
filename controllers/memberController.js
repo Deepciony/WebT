@@ -1,5 +1,8 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import multer from "multer";
+import fs from "fs";
+import path from "path";
 import database from "../database.js";
 
 // httpOnly keeps the token away from page JavaScript (XSS); strict stops cross-site sends.
@@ -8,6 +11,79 @@ const cookieOptions = {
     secure: true,
     sameSite: 'strict'
 };
+
+// The photo is named after the signed-in member, so strip anything that could walk the path
+const reserved = /^(default|avatar-.*)$/i;
+function photoStem(memEmail) {
+    const stem = String(memEmail).replace(/[^A-Za-z0-9@._-]/g, '_');
+    // never let a member claim default.jpg or one of the shipped avatars
+    return reserved.test(stem) ? '_' + stem : stem;
+}
+const photoDir = 'img_mem';
+const photoExt = (mimetype) => (mimetype === 'image/png' ? 'png' : mimetype === 'image/webp' ? 'webp' : 'jpg');
+
+// the photo keeps its real extension, so look the file up by its stem
+function findPhoto(memEmail) {
+    const stem = photoStem(memEmail);
+    const found = fs.readdirSync(photoDir).find((name) => path.parse(name).name === stem);
+    return found ? `/${photoDir}/${found}` : null;
+}
+
+// a fresh clone may not have the folder yet, and multer will not create it
+fs.mkdirSync("img_mem", { recursive: true });
+
+const photoUpload = multer({
+    storage: multer.diskStorage({
+        destination: (req, file, callback) => callback(null, 'img_mem'),
+        // the owner comes from the token, never from the form body
+        filename: (req, file, callback) => callback(null, `${photoStem(req.member.memEmail)}.${photoExt(file.mimetype)}`)
+    }),
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: (req, file, callback) => {
+        callback(null, ['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype));
+    }
+}).single('file');
+
+// requireLogin runs first, so req.member is already the verified token
+export async function uploadMemberPhoto(req, res) {
+    console.log(`POST /members/uploadimg is requested.`);
+    photoUpload(req, res, (err) => {
+        if (err) {
+            console.log(err.message);
+            return res.status(400).json({ error: 'photo.uploadFail' });
+        }
+        if (!req.file) {
+            return res.status(400).json({ error: 'photo.invalid' });
+        }
+        // a member has one photo: drop the copies left over in other formats
+        const stem = photoStem(req.member.memEmail);
+        for (const name of fs.readdirSync(photoDir)) {
+            if (path.parse(name).name === stem && name !== req.file.filename) {
+                fs.unlinkSync(path.join(photoDir, name));
+            }
+        }
+        return res.json({ message: 'photo.uploaded', photo: `/${photoDir}/${req.file.filename}` });
+    });
+}
+
+export async function deleteMemberPhoto(req, res) {
+    console.log(`DELETE /members/photo is requested.`);
+    try {
+        const stem = photoStem(req.member.memEmail);
+        let removed = false;
+        for (const name of fs.readdirSync(photoDir)) {
+            if (path.parse(name).name === stem) {
+                fs.unlinkSync(path.join(photoDir, name));
+                removed = true;
+            }
+        }
+        if (!removed) return res.status(404).json({ error: 'photo.none' });
+        return res.json({ message: 'photo.removed', photo: null });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: 'photo.removeFail' });
+    }
+}
 
 export async function postMember(req, res) {
     console.log(`POST /members is requested.`);
@@ -107,6 +183,7 @@ export async function getMember(req, res) {
             memEmail: member.memEmail,
             memName: member.memName,
             dutyId: member.dutyId,
+            photo: findPhoto(member.memEmail),
             login: true
         });
     }
@@ -176,6 +253,7 @@ export async function updateMember(req, res) {
             memEmail: member.memEmail,
             memName: nextName,
             dutyId: currentMember.dutyId,
+            photo: findPhoto(member.memEmail),
             login: true
         });
     } catch (err) {

@@ -42,15 +42,22 @@
                     {{ t('manage.detail') }}
                     <textarea v-model.trim="form.pdRemark" rows="4" :placeholder="t('manage.detailPh')"></textarea>
                 </label>
-                <label class="image-field">
-                    {{ t('manage.image') }}
-                    <input type="file" accept="image/jpeg,image/png,image/webp" @change="selectImage">
+                <div class="image-field">
+                    <span class="image-field-label">{{ t('manage.image') }}</span>
+                    <label class="sk-file">
+                        <input type="file" accept="image/jpeg,image/png,image/webp" @change="selectImage">
+                        <span class="sk-file-btn">{{ t('photo.browse') }}</span>
+                        <span class="sk-file-name" :class="{ picked: imageName }">{{ imageName || t('photo.noFile') }}</span>
+                    </label>
                     <small>{{ t('manage.imageHint') }}</small>
-                </label>
+                </div>
                 <img v-if="imagePreview" class="image-preview" :src="imagePreview" :alt="t('product.imgAlt')" @error="handlePreviewError">
                 <div class="form-actions">
                     <button class="manage-primary sk-btn" type="submit">{{ t(selectedId ? 'manage.saveEdit' : 'manage.add') }}</button>
                     <button class="manage-cancel sk-btn sk-btn-ghost" type="button" @click="resetForm">{{ t('manage.clear') }}</button>
+                    <button v-if="selectedId" class="manage-delete sk-btn sk-btn-coral" type="button" @click="askDelete">
+                        {{ t('manage.delete') }}
+                    </button>
                 </div>
                 <p v-if="message" class="manage-message sk-msg" role="status" :class="{ error: messageType === 'error' }">{{ t(message) }}</p>
             </form>
@@ -58,16 +65,47 @@
             <div class="manage-list sk-card">
                 <div class="list-heading">
                     <h2>{{ t('manage.list') }}</h2>
-                    <span>{{ t('common.items', { n: products.length }) }}</span>
+                    <span>{{ t('filter.showing', { n: shown.length, total: products.length }) }}</span>
+                </div>
+                <div class="sk-filters list-filters" role="group" :aria-label="t('filter.title')">
+                    <label class="grow">{{ t('filter.keyword') }}<input v-model.trim="filters.keyword" type="search" :placeholder="t('filter.keywordPh')"></label>
+                    <div class="filter-field grow">
+                        <span class="filter-label">{{ t('filter.brand') }}</span>
+                        <SkySelect v-model="filters.brandId" :options="brandOptions" :aria-label="t('filter.brand')" />
+                    </div>
+                    <div class="filter-field grow">
+                        <span class="filter-label">{{ t('filter.type') }}</span>
+                        <SkySelect v-model="filters.pdTypeId" :options="typeOptions" :aria-label="t('filter.type')" />
+                    </div>
+                    <div class="filter-field grow">
+                        <span class="filter-label">{{ t('filter.price') }}</span>
+                        <SkyRange v-model:min="filters.minPrice" v-model:max="filters.maxPrice" :presets="pricePresets" :aria-label="t('filter.price')" />
+                    </div>
+                    <div class="filter-field grow">
+                        <span class="filter-label">{{ t('filter.sort') }}</span>
+                        <SkySelect v-model="filters.sort" :options="sortOptions" :aria-label="t('filter.sort')" />
+                    </div>
+                    <button class="sk-btn sk-btn-ghost" type="button" :disabled="!filterActive" @click="resetFilters">{{ t('filter.reset') }}</button>
                 </div>
                 <div class="product-list">
-                    <button v-for="product in products" :key="product.pdId" class="product-row" :class="{ selected: selectedId === product.pdId }" type="button" @click="editProduct(product)">
+                    <button v-for="product in shown" :key="product.pdId" class="product-row" :class="{ selected: selectedId === product.pdId }" type="button" @click="editProduct(product)">
                         <span class="product-row-id sk-mono">#{{ product.pdId }}</span>
                         <span class="product-row-name">{{ product.pdName }}</span>
                         <span class="product-row-price sk-mono">${{ product.pdPrice }}</span>
                         <span class="product-row-action">{{ t('manage.edit') }}</span>
                     </button>
                     <p v-if="!products.length" class="empty-list">{{ t('manage.empty') }}</p>
+                    <p v-else-if="!shown.length" class="empty-list">{{ t('filter.none') }}</p>
+                </div>
+            </div>
+        </div>
+        <div v-if="confirmState.open" class="confirm-overlay" @click.self="closeConfirm">
+            <div class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="manage-confirm-title">
+                <h2 id="manage-confirm-title">{{ t('manage.confirmDeleteTitle') }}</h2>
+                <p>{{ confirmState.message }}</p>
+                <div class="confirm-actions">
+                    <button class="sk-btn sk-btn-ghost" type="button" @click="closeConfirm">{{ t('db.cancel') }}</button>
+                    <button class="sk-btn sk-btn-coral" type="button" @click="runConfirm">{{ t('manage.delete') }}</button>
                 </div>
             </div>
         </div>
@@ -75,15 +113,18 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import axios from 'axios'
 import { t } from '../i18n.js'
+import SkySelect from './SkySelect.vue'
+import SkyRange from './SkyRange.vue'
 
 const products = ref([])
 const selectedId = ref(null)
 const message = ref('')
 const messageType = ref('success')
 const imageFile = ref(null)
+const imageName = computed(() => imageFile.value?.name || '')
 const imagePreview = ref('')
 
 const emptyForm = () => ({
@@ -97,9 +138,88 @@ const emptyForm = () => ({
 
 const form = reactive(emptyForm())
 
+const emptyFilters = () => ({ keyword: '', brandId: '', pdTypeId: '', minPrice: '', maxPrice: '', sort: 'id' })
+const filters = reactive(emptyFilters())
+const resetFilters = () => Object.assign(filters, emptyFilters())
+const filterActive = computed(() => Object.entries(emptyFilters()).some(([key, value]) => filters[key] !== value))
+
+const pricePresets = [{ max: 100 }, { min: 100, max: 500 }, { min: 500, max: 1000 }, { min: 1000, max: 5000 }, { min: 5000 }]
+const optionsFrom = (objectKey, idKey, nameKey) => {
+    const found = new Map()
+    for (const product of products.value) {
+        const id = product[objectKey]?.[idKey] ?? product[idKey]
+        if (id && !found.has(id)) found.set(id, product[objectKey]?.[nameKey] || id)
+    }
+    const list = [...found].map(([value, label]) => ({ value, label })).sort((a, b) => String(a.label).localeCompare(String(b.label)))
+    return [{ value: '', label: t('filter.all') }, ...list]
+}
+const brandOptions = computed(() => optionsFrom('brand', 'brandId', 'brandName'))
+const typeOptions = computed(() => optionsFrom('pdt', 'pdTypeId', 'pdTypeName'))
+const sortOptions = computed(() => [
+    { value: 'id', label: t('filter.sortId') },
+    { value: 'nameAsc', label: t('filter.sortNameAsc') },
+    { value: 'nameDesc', label: t('filter.sortNameDesc') },
+    { value: 'priceAsc', label: t('filter.sortPriceAsc') },
+    { value: 'priceDesc', label: t('filter.sortPriceDesc') }
+])
+
+const limit = (value) => value === '' || value === null ? null : (Number.isFinite(Number(value)) ? Number(value) : null)
+const sorters = {
+    id: (a, b) => String(a.pdId).localeCompare(String(b.pdId), undefined, { numeric: true }),
+    nameAsc: (a, b) => String(a.pdName).localeCompare(String(b.pdName)),
+    nameDesc: (a, b) => String(b.pdName).localeCompare(String(a.pdName)),
+    priceAsc: (a, b) => Number(a.pdPrice) - Number(b.pdPrice),
+    priceDesc: (a, b) => Number(b.pdPrice) - Number(a.pdPrice)
+}
+const shown = computed(() => {
+    const keyword = filters.keyword.toLowerCase()
+    const min = limit(filters.minPrice)
+    const max = limit(filters.maxPrice)
+    const rows = products.value.filter((product) => {
+        if (filters.brandId && (product.brand?.brandId ?? product.brandId) !== filters.brandId) return false
+        if (filters.pdTypeId && (product.pdt?.pdTypeId ?? product.pdTypeId) !== filters.pdTypeId) return false
+        const price = Number(product.pdPrice)
+        if (min !== null && price < min) return false
+        if (max !== null && price > max) return false
+        if (!keyword) return true
+        return [product.pdId, product.pdName, product.pdRemark, product.brand?.brandName, product.pdt?.pdTypeName]
+            .some((field) => String(field ?? '').toLowerCase().includes(keyword))
+    })
+    return rows.sort(sorters[filters.sort] || sorters.id)
+})
+
 const loadProducts = async () => {
     const response = await axios.get('http://localhost:3000/products')
     products.value = response.data
+}
+
+const confirmState = ref({ open: false, message: '', action: null })
+const closeConfirm = () => { confirmState.value = { open: false, message: '', action: null } }
+const runConfirm = async () => {
+    const action = confirmState.value.action
+    closeConfirm()
+    if (action) await action()
+}
+
+const askDelete = () => {
+    confirmState.value = {
+        open: true,
+        message: t('manage.confirmDelete', { name: form.pdName || selectedId.value }),
+        action: deleteProduct
+    }
+}
+
+const deleteProduct = async () => {
+    try {
+        await axios.delete(`http://localhost:3000/products/${encodeURIComponent(selectedId.value)}`)
+        await loadProducts()
+        resetForm()
+        messageType.value = 'success'
+        message.value = 'manage.deleted'
+    } catch (error) {
+        messageType.value = 'error'
+        message.value = error.response?.data?.error || 'manage.deleteFail'
+    }
 }
 
 const resetForm = () => {
@@ -194,12 +314,19 @@ onMounted(async () => {
 .form-heading small, .list-heading span { color: #88939d; font-size: 12px; font-weight: 400; }
 .manage-form label { display: block; margin-bottom: 16px; color: #39444d; font-size: 14px; font-weight: 700; }
 .manage-form input, .manage-form textarea { display: block; width: 100%; margin-top: 6px; padding: 10px 11px; color: #2c3e50; border: 1px solid #cfd7de; border-radius: 5px; outline: 0; font-size: 14px; }
-.image-field input { padding: 8px; }
+.image-field { margin-bottom: 20px; }
+.image-field-label { display: block; margin-bottom: 8px; color: var(--ink, #2c3e50); font-size: 16px; font-weight: 700; }
 .image-field small { display: block; margin-top: 6px; color: #88939d; font-size: 12px; font-weight: 400; }
 .image-preview { display: block; width: 100%; height: 180px; margin: -4px 0 16px; object-fit: contain; background: #f2f5f8; border-radius: 8px; }
 .manage-form input:focus, .manage-form textarea:focus { border-color: #198754; box-shadow: 0 0 0 3px rgba(25, 135, 84, .12); }
 .form-two-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.form-actions { display: flex; gap: 10px; margin-top: 20px; }
+.form-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+.confirm-overlay { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; background: rgba(15, 23, 42, .5); }
+.confirm-dialog { width: min(420px, calc(100vw - 32px)); padding: 24px; color: var(--ink); background: var(--surface); border: 1px solid var(--outline); border-radius: var(--r-card); box-shadow: var(--shadow-active); }
+.confirm-dialog h2 { margin: 0 0 8px; font-size: 22px; }
+.confirm-dialog p { margin: 0 0 22px; color: var(--ink-muted); }
+.confirm-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.confirm-actions .sk-btn { min-width: 90px; }
 .manage-primary, .manage-secondary, .manage-cancel { padding: 10px 16px; border: 0; border-radius: 5px; cursor: pointer; font-weight: 700; }
 .manage-primary { color: #fff; background: #198754; }
 .manage-secondary { color: #fff; background: #2c3e50; }

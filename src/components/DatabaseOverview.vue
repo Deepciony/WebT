@@ -14,7 +14,11 @@
         <p v-else-if="loading" class="database-loading" aria-busy="true">{{ t('db.loading') }}</p>
 
         <div v-else class="database-tables">
-            <article v-for="table in tables" :key="table.name" class="database-table sk-card">
+            <div class="sk-filters" role="group" :aria-label="t('filter.title')">
+                <label class="grow">{{ t('filter.table') }}<input v-model.trim="tableSearch" type="search" :placeholder="t('filter.rowSearchPh')"></label>
+                <button class="sk-btn sk-btn-ghost" type="button" :disabled="!tableSearch" @click="tableSearch = ''">{{ t('filter.reset') }}</button>
+            </div>
+            <article v-for="table in shownTables" :key="table.name" class="database-table sk-card">
                 <div class="table-heading">
                     <div>
                         <span class="table-label">{{ t('db.table') }}</span>
@@ -27,29 +31,39 @@
                         {{ column.column_name }} <small>{{ column.data_type }}</small>
                     </span>
                 </div>
+                <div v-if="table.rows.length" class="sk-filters row-filters" role="group">
+                    <label class="grow">{{ t('filter.rowSearch') }}<input v-model.trim="rowFilters[table.name].keyword" type="search" :placeholder="t('filter.rowSearchPh')"></label>
+                    <div class="filter-field grow">
+                        <span class="filter-label">{{ t('filter.column') }}</span>
+                        <SkySelect v-model="rowFilters[table.name].column" :options="columnOptions(table)" :aria-label="t('filter.column')" />
+                    </div>
+                    <span class="row-count sk-mono">{{ t('filter.rows', { n: visibleRows(table).length, total: table.rows.length }) }}</span>
+                </div>
                 <div v-if="table.rows.length" class="table-scroll">
                     <table class="sk-mono">
                         <thead>
                             <tr>
                                 <th v-for="key in rowKeys(table.rows[0])" :key="key">{{ key }}</th>
-                                <th v-if="table.name === 'members'">{{ t('db.actions') }}</th>
+                                <th v-if="deletableTable(table.name)">{{ t('db.actions') }}</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="(row, index) in table.rows" :key="index">
+                            <tr v-for="(row, index) in visibleRows(table)" :key="index">
                                 <td v-for="key in rowKeys(row)" :key="key">{{ formatValue(row[key]) }}</td>
-                                <td v-if="table.name === 'members' || table.name === 'carts'">
-                                    <button v-if="table.name === 'members' ? canDelete(row.memEmail) : canDeleteCart(row)" class="delete-member" type="button" @click="table.name === 'members' ? deleteMember(row.memEmail) : deleteCart(row.cartId)">
+                                <td v-if="deletableTable(table.name)">
+                                    <button v-if="canDeleteRow(table.name, row)" class="delete-member" type="button" @click="askDelete(table.name, row)">
                                         {{ t('db.delete') }}
                                     </button>
                                 </td>
                             </tr>
                         </tbody>
                     </table>
+                    <p v-if="!visibleRows(table).length" class="empty-table">{{ t('filter.noRowMatch') }}</p>
                 </div>
                 <p v-else class="empty-table">{{ t('db.empty') }}</p>
             </article>
             <p v-if="!tables.length" class="empty-table">{{ t('db.noTables') }}</p>
+            <p v-else-if="!shownTables.length" class="empty-table">{{ t('filter.noTableMatch') }}</p>
         </div>
 
         <div v-if="confirmState.open" class="confirm-overlay" @click.self="closeConfirm">
@@ -66,21 +80,49 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import axios from 'axios'
 import { t } from '../i18n.js'
 import { useAuthStore } from '../stores/authStore.js'
+import SkySelect from './SkySelect.vue'
 
 const authStore = useAuthStore()
 
-// Admins may remove anyone; everyone else only their own account
-const canDelete = (memEmail) => authStore.member?.dutyId === 'admin' || authStore.member?.memEmail === memEmail
-const canDeleteCart = (row) => authStore.member?.dutyId === 'admin' || authStore.member?.memEmail === row?.cusId
+// which column identifies a row, per table
+const rowKey = { members: 'memEmail', carts: 'cartId', products: 'pdId', brands: 'brandId', pdTypes: 'pdTypeId' }
+const isAdmin = () => authStore.member?.dutyId === 'admin'
+const deletableTable = (name) => name in rowKey
+
+// Admins may remove anything; everyone else only their own account and carts
+const canDeleteRow = (name, row) => {
+    if (name === 'members') return isAdmin() || authStore.member?.memEmail === row?.memEmail
+    if (name === 'carts') return isAdmin() || authStore.member?.memEmail === row?.cusId
+    return isAdmin()
+}
 
 const tables = ref([])
 const loading = ref(true)
 const error = ref('')
 const confirmState = ref({ open: false, message: '', action: null })
+
+const tableSearch = ref('')
+const rowFilters = reactive({})
+const shownTables = computed(() => {
+    const keyword = tableSearch.value.toLowerCase()
+    return tables.value.filter((table) => table.name.toLowerCase().includes(keyword))
+})
+const columnOptions = (table) => [{ value: '', label: t('filter.anyColumn') },
+    ...table.columns.map((column) => ({ value: column.column_name, label: column.column_name }))]
+
+const visibleRows = (table) => {
+    const filter = rowFilters[table.name] || { keyword: '', column: '' }
+    const keyword = filter.keyword.toLowerCase()
+    if (!keyword) return table.rows
+    return table.rows.filter((row) => {
+        const keys = filter.column && filter.column in row ? [filter.column] : Object.keys(row)
+        return keys.some((key) => String(row[key] ?? '').toLowerCase().includes(keyword))
+    })
+}
 
 const loadOverview = async () => {
     loading.value = true
@@ -88,6 +130,7 @@ const loadOverview = async () => {
     try {
         const response = await axios.get('http://localhost:3000/database/overview')
         tables.value = response.data.tables
+        for (const table of tables.value) rowFilters[table.name] ??= { keyword: '', column: '' }
     } catch (requestError) {
         error.value = requestError.response?.data?.error || 'db.loadFail'
     } finally {
@@ -106,6 +149,25 @@ const runConfirm = async () => {
     const action = confirmState.value.action
     closeConfirm()
     if (action) await action()
+}
+
+const askDelete = (name, row) => {
+    const id = row[rowKey[name]]
+    if (name === 'members') return deleteMember(id)
+    if (name === 'carts') return deleteCart(id)
+    confirmState.value = {
+        open: true,
+        message: t('db.confirmDeleteRow', { table: name, id }),
+        action: async () => {
+            error.value = ''
+            try {
+                await axios.delete(`http://localhost:3000/database/rows/${encodeURIComponent(name)}/${encodeURIComponent(id)}`)
+                await loadOverview()
+            } catch (requestError) {
+                error.value = requestError.response?.data?.error || 'db.deleteRowFail'
+            }
+        }
+    }
 }
 
 const deleteMember = async (memEmail) => {
