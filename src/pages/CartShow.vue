@@ -81,8 +81,8 @@
                 <p class="confirm-host">{{ confirmHost }}</p>
                 <h3 id="confirm-dialog-title">{{ confirmState.title }}</h3>
                 <div class="confirm-actions">
-                    <button type="button" class="confirm-cancel" @click="closeConfirmDialog">Cancel</button>
-                    <button type="button" class="confirm-ok" @click="runConfirmAction">OK</button>
+                    <button type="button" class="confirm-cancel" @click="closeConfirmDialog">{{ t('db.cancel') }}</button>
+                    <button type="button" class="confirm-ok" @click="runConfirmAction">{{ t('common.confirm') }}</button>
                 </div>
             </div>
         </div>
@@ -226,14 +226,14 @@ const openConfirmDialog = (title, action) => {
 }
 
 const removeCart = () => {
-    openConfirmDialog('Delete cart?', async () => {
+    openConfirmDialog(t('cartdb.confirmDelete'), async () => {
         const ok = await run(() => cartStore.deleteCart(cart.value.cartId))
         if (ok) router.push('/cartlist')
     })
 }
 
 const confirmOrder = () => {
-    openConfirmDialog('Confirm this order?', async () => {
+    openConfirmDialog(t('cartdb.confirmOrder'), async () => {
         const ok = await run(() => cartStore.confirmCart(cart.value.cartId))
         if (!ok) return
         done.value = true
@@ -339,10 +339,12 @@ onMounted(load)
     color: #0f172a;
     background: #f8fafc;
 }
+.confirm-cancel:hover { background: #e2e8f0; }
 .confirm-ok {
     color: #0f172a;
     background: #e5e7eb;
 }
+.confirm-ok:hover { background: #d1d5db; }
 .empty-cart { padding: 80px 20px; text-align: center; }
 .empty-cart span { color: #f0c75e; font-size: 52px; }
 .empty-cart h2 { margin: 10px 0 6px; font-size: 25px; }

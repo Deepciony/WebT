@@ -115,9 +115,9 @@ export async function postMember(req, res) {
         const saltround = 11;
         const pwdHash = await bcrypt.hash(password, saltround);
         await database.query({
-            text: `INSERT INTO "members" ("memEmail", "memName", "memHash")
-                   VALUES ($1, $2, $3)`,
-            values: [memEmail, memName, pwdHash]
+             text: `INSERT INTO "members" ("memEmail", "memName", "memHash")
+                 VALUES ($1, $2, $3)`,
+             values: [memEmail, memName, pwdHash]
         });
         // Echo back only public fields, not the password
         res.json({
@@ -171,6 +171,36 @@ export async function loginMember(req, res) {
     }
 }
 
+export async function devAdminLogin(req, res) {
+    if (process.env.NODE_ENV === 'production' || process.env.ENABLE_DEV_ADMIN_BYPASS !== 'true') {
+        return res.status(404).json({ error: 'auth.devAdminDisabled' });
+    }
+    const passcode = typeof req.body?.passcode === 'string' ? req.body.passcode.trim() : '';
+    if (!process.env.DEV_ADMIN_PASSCODE || passcode !== process.env.DEV_ADMIN_PASSCODE.trim()) {
+        return res.status(401).json({ error: 'auth.devAdminPasscodeInvalid' });
+    }
+    const adminEmail = String(process.env.DEV_ADMIN_EMAIL || '').trim().toLowerCase();
+    if (!adminEmail) {
+        return res.status(503).json({ error: 'auth.devAdminAccountUnavailable' });
+    }
+    try {
+        const result = await database.query({
+            text: `SELECT "memEmail", "memName", "dutyId" FROM "members" WHERE LOWER("memEmail") = $1;`,
+            values: [adminEmail]
+        });
+        const admin = result.rows[0];
+        if (!admin || admin.dutyId !== 'admin') {
+            return res.status(403).json({ error: 'auth.devAdminAccountUnavailable' });
+        }
+        const token = jwt.sign(admin, process.env.SECRET_KEY, { expiresIn: '1h' });
+        res.cookie('token', token, { ...cookieOptions, maxAge: 3600000 });
+        return res.json({ login: true });
+    } catch (err) {
+        console.error(err);
+        return res.status(503).json({ error: 'auth.roleCheckFail' });
+    }
+}
+
 export async function getMember(req, res) {
     console.log(`GET /members/detail is requested.`);
     const token = req.cookies.token;
@@ -179,11 +209,15 @@ export async function getMember(req, res) {
     try {
         // verify fails if the token or its signature was tampered with
         const member = jwt.verify(token, process.env.SECRET_KEY);
+        const result = await database.query({
+            text: `SELECT "memEmail", "memName", "dutyId" FROM "members" WHERE "memEmail" = $1;`,
+            values: [member.memEmail]
+        });
+        if (!result.rowCount) return res.json({ message: `No member`, login: false });
+        const currentMember = result.rows[0];
         return res.json({
-            memEmail: member.memEmail,
-            memName: member.memName,
-            dutyId: member.dutyId,
-            photo: findPhoto(member.memEmail),
+            ...currentMember,
+            photo: findPhoto(currentMember.memEmail),
             login: true
         });
     }

@@ -5,6 +5,7 @@ import { requireLogin } from "../controllers/authMiddleware.js";
 const router = express.Router();
 
 router.get("/members/detail", memberC.getMember);
+router.post("/members/dev-admin", memberC.devAdminLogin);
 router.get("/members/logout", memberC.logoutMember);
 router.put("/members/profile", requireLogin, memberC.updateMember);
 router.post("/members", memberC.postMember);

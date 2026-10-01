@@ -46,14 +46,17 @@ const links = [
   { to: '/', label: 'nav.home', icon: 'home' },
   { to: '/product', label: 'nav.products', icon: 'shop' },
   { to: '/login', label: 'nav.login', icon: 'login', guest: true },
-  { to: '/manage', label: 'nav.manage', icon: 'pencil', member: true },
-  { to: '/database', label: 'nav.database', icon: 'database', member: true },
+  { to: '/manage', label: 'nav.manage', icon: 'pencil', admin: true },
+  { to: '/database', label: 'nav.database', icon: 'database', admin: true },
   { to: '/cartlist', label: 'nav.orders', icon: 'shop', member: true }
 ]
 
-const visibleLinks = computed(() => links.filter((link) =>
-  authStore.isLogin ? !link.guest : !link.member
-))
+const visibleLinks = computed(() => links.filter((link) => {
+  if (link.guest) return !authStore.isLogin
+  if (link.admin) return authStore.isLogin && authStore.member?.dutyId === 'admin'
+  if (link.member) return authStore.isLogin
+  return true
+}))
 </script>
 <style scoped>
 .sky-logout { display: grid; flex: none; place-items: center; width: 56px; height: 56px; color: var(--coral-ink); background: var(--surface); border: 1px solid var(--outline); border-radius: 16px; cursor: pointer; transition: background var(--dur), border-color var(--dur); }

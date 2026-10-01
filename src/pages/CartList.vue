@@ -18,9 +18,9 @@
                         <p class="sk-mono">${{ Number(item.price).toFixed(2) }}</p>
                     </div>
                     <div class="guest-quantity-control">
-                        <button type="button" :disabled="item.qty <= 1" @click="cartStore.adjustGuestQty(item.pdId, item.qty - 1)">−</button>
+                        <button type="button" :disabled="item.qty <= 1" :aria-label="t('cart.decrease', { name: item.pdName })" @click="cartStore.adjustGuestQty(item.pdId, item.qty - 1)">−</button>
                         <span class="sk-mono">{{ item.qty }}</span>
-                        <button type="button" @click="cartStore.adjustGuestQty(item.pdId, item.qty + 1)">+</button>
+                        <button type="button" :aria-label="t('cart.increase', { name: item.pdName })" @click="cartStore.adjustGuestQty(item.pdId, item.qty + 1)">+</button>
                     </div>
                     <strong class="sk-mono">${{ (Number(item.price) * Number(item.qty)).toFixed(2) }}</strong>
                     <button class="guest-remove" type="button" :aria-label="`${t('cart.remove')} ${item.pdName}`" @click="cartStore.removeGuestProduct(item.pdId)">×</button>
@@ -69,6 +69,7 @@
                         <th class="align-center">{{ t('cartdb.qty') }}</th>
                         <th class="align-right">{{ t('cartdb.amount') }}</th>
                         <th class="align-center">{{ t('orders.status') }}</th>
+                        <th class="align-center">{{ t('db.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -84,6 +85,9 @@
                             <span class="status" :class="cart.cartCf ? 'done' : 'open'">
                                 {{ cart.cartCf ? t('cartdb.confirmed') : t('cartdb.open') }}
                             </span>
+                        </td>
+                        <td class="align-center">
+                            <button class="order-delete" type="button" :aria-label="`${t('orders.delete')} ${cart.cartId}`" :disabled="deleting" @click="askDelete(cart)">{{ t('orders.delete') }}</button>
                         </td>
                     </tr>
                 </tbody>
@@ -114,6 +118,18 @@
                 </div>
             </div>
         </div>
+
+        <div v-if="confirmDeleteCart" class="notice-overlay" @click.self="closeDeleteDialog">
+            <div class="notice-dialog" role="dialog" aria-modal="true" aria-labelledby="delete-order-title">
+                <h2 id="delete-order-title">{{ t('orders.confirmDeleteTitle') }}</h2>
+                <p>{{ t('orders.confirmDelete', { id: confirmDeleteCart.cartId }) }}</p>
+                <p v-if="deleteError" class="delete-error" role="alert">{{ t('orders.deleteFail') }}</p>
+                <div class="notice-actions">
+                    <button class="sk-btn sk-btn-ghost" type="button" :disabled="deleting" @click="closeDeleteDialog">{{ t('common.close') }}</button>
+                    <button class="sk-btn sk-btn-coral" type="button" :disabled="deleting" @click="deleteOrder">{{ deleting ? t('db.loading') : t('orders.delete') }}</button>
+                </div>
+            </div>
+        </div>
     </section>
 </template>
 
@@ -129,6 +145,9 @@ import SkyRange from '../components/ui/SkyRange.vue'
 const carts = ref([])
 const loading = ref(true)
 const loginNotice = ref(false)
+const confirmDeleteCart = ref(null)
+const deleting = ref(false)
+const deleteError = ref(false)
 const authStore = useAuthStore()
 const cartStore = useCartStore()
 const guestQty = computed(() => cartStore.guestItems.reduce((sum, item) => sum + Number(item.qty), 0))
@@ -185,6 +204,36 @@ const openLoginNotice = () => {
     loginNotice.value = true
 }
 
+const askDelete = (cart) => {
+    confirmDeleteCart.value = cart
+    deleteError.value = false
+}
+
+const closeDeleteDialog = () => {
+    if (deleting.value) return
+    confirmDeleteCart.value = null
+    deleteError.value = false
+}
+
+const deleteOrder = async () => {
+    if (!confirmDeleteCart.value || deleting.value) return
+    deleting.value = true
+    deleteError.value = false
+    try {
+        const deletedCartId = confirmDeleteCart.value.cartId
+        await axios.delete(`http://localhost:3000/database/carts/${encodeURIComponent(deletedCartId)}`)
+        carts.value = carts.value
+            .filter((cart) => cart.cartId !== deletedCartId)
+            .map((cart, index) => ({ ...cart, row_number: index + 1 }))
+        confirmDeleteCart.value = null
+    } catch (err) {
+        console.log(err.message)
+        deleteError.value = true
+    } finally {
+        deleting.value = false
+    }
+}
+
 const formattedDate = (value) => {
     if (!value) return '-'
     const date = new Date(value)
@@ -226,6 +275,10 @@ tbody tr:last-child td { border-bottom: 0; }
 .status { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
 .status.done { color: #15803d; background: #dcfce7; }
 .status.open { color: #92400e; background: #fef3c7; }
+.order-delete { appearance: none; display: inline-flex; min-width: 88px; min-height: 34px; align-items: center; justify-content: center; padding: 0 12px; color: #b42318; background: #fee2e2; border: 1px solid #f87171; border-bottom-color: #f87171; border-radius: 8px; box-shadow: none; font-size: 12px; font-weight: 700; line-height: 1.2; cursor: pointer; transition: background-color .16s ease, border-color .16s ease, transform .16s ease; }
+.order-delete:hover:not(:disabled) { color: #991b1b; background: #fecaca; border-color: #ef4444; border-bottom-color: #ef4444; transform: translateY(-1px); }
+.order-delete:focus-visible { outline: 3px solid rgba(217, 155, 148, .35); outline-offset: 2px; }
+.order-delete:disabled { color: #b42318; background: #fee2e2; border-color: #f87171; border-bottom-color: #f87171; opacity: .65; cursor: not-allowed; }
 .guest-cart-layout { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(320px, .8fr); gap: 26px; align-items: start; margin-top: 28px; }
 .guest-cart-item { display: grid; grid-template-columns: 92px minmax(0, 1fr) auto auto 28px; gap: 16px; align-items: center; margin-bottom: 12px; padding: 14px; background: #fff; border: 1px solid #dce5df; border-radius: 10px; box-shadow: 0 5px 16px rgba(44, 62, 80, .06); }
 .guest-cart-item img { width: 92px; height: 92px; object-fit: contain; background: #f4f7f5; border-radius: 7px; }
@@ -250,6 +303,7 @@ tbody tr:last-child td { border-bottom: 0; }
 .notice-dialog p { margin: 0 0 22px; color: var(--ink-muted); }
 .notice-actions { display: flex; justify-content: flex-end; gap: 10px; }
 .notice-actions .sk-btn { text-decoration: none; }
+.delete-error { color: var(--coral-ink) !important; }
 
 /* Skylearn */
 :root[data-theme="sky"] .orders-head h1 { color: var(--ink); font-size: clamp(30px, 4vw, 40px); }

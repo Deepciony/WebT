@@ -51,9 +51,14 @@
                             <tr v-for="(row, index) in visibleRows(table)" :key="index">
                                 <td v-for="key in rowKeys(row)" :key="key">{{ formatValue(row[key]) }}</td>
                                 <td v-if="deletableTable(table.name)">
-                                    <button v-if="canDeleteRow(table.name, row)" class="delete-member" type="button" @click="askDelete(table.name, row)">
-                                        {{ t('db.delete') }}
-                                    </button>
+                                    <div class="table-row-actions">
+                                        <button v-if="canChangeRole(table.name, row)" class="change-role" type="button" :disabled="isLastAdmin(row)" :title="isLastAdmin(row) ? t('db.lastAdminRequired') : undefined" @click="askRoleChange(row)">
+                                            {{ t(row.dutyId === 'admin' ? 'db.roleToMember' : 'db.roleToAdmin') }}
+                                        </button>
+                                        <button v-if="canDeleteRow(table.name, row)" class="delete-member" type="button" @click="askDelete(table.name, row)">
+                                            {{ t('db.delete') }}
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         </tbody>
@@ -68,11 +73,11 @@
 
         <div v-if="confirmState.open" class="confirm-overlay" @click.self="closeConfirm">
             <div class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="database-confirm-title">
-                <h2 id="database-confirm-title">{{ t('db.confirmTitle') }}</h2>
+                <h2 id="database-confirm-title">{{ t(confirmState.title) }}</h2>
                 <p>{{ confirmState.message }}</p>
                 <div class="confirm-actions">
                     <button class="sk-btn sk-btn-ghost" type="button" @click="closeConfirm">{{ t('db.cancel') }}</button>
-                    <button class="sk-btn sk-btn-coral" type="button" @click="runConfirm">{{ t('db.delete') }}</button>
+                    <button class="sk-btn sk-btn-coral" type="button" @click="runConfirm">{{ t(confirmState.confirmLabel) }}</button>
                 </div>
             </div>
         </div>
@@ -95,15 +100,21 @@ const deletableTable = (name) => name in rowKey
 
 // Admins may remove anything; everyone else only their own account and carts
 const canDeleteRow = (name, row) => {
-    if (name === 'members') return isAdmin() || authStore.member?.memEmail === row?.memEmail
+    if (name === 'members') return row?.memEmail !== authStore.member?.memEmail
+        && (isAdmin() || authStore.member?.memEmail === row?.memEmail)
     if (name === 'carts') return isAdmin() || authStore.member?.memEmail === row?.cusId
     return isAdmin()
 }
+const canChangeRole = (name, row) => isAdmin()
+    && name === 'members'
+    && row?.memEmail !== authStore.member?.memEmail
+const isLastAdmin = (row) => row?.dutyId === 'admin'
+    && (tables.value.find((table) => table.name === 'members')?.rows.filter((member) => member.dutyId === 'admin').length ?? 0) <= 1
 
 const tables = ref([])
 const loading = ref(true)
 const error = ref('')
-const confirmState = ref({ open: false, message: '', action: null })
+const confirmState = ref({ open: false, title: 'db.confirmTitle', message: '', confirmLabel: 'db.delete', action: null })
 
 const tableSearch = ref('')
 const rowFilters = reactive({})
@@ -142,7 +153,7 @@ const rowKeys = (row) => Object.keys(row)
 const formatValue = (value) => value === null || value === undefined ? '-' : value
 
 const closeConfirm = () => {
-    confirmState.value = { open: false, message: '', action: null }
+    confirmState.value = { open: false, title: 'db.confirmTitle', message: '', confirmLabel: 'db.delete', action: null }
 }
 
 const runConfirm = async () => {
@@ -157,7 +168,9 @@ const askDelete = (name, row) => {
     if (name === 'carts') return deleteCart(id)
     confirmState.value = {
         open: true,
+        title: 'db.confirmTitle',
         message: t('db.confirmDeleteRow', { table: name, id }),
+        confirmLabel: 'db.delete',
         action: async () => {
             error.value = ''
             try {
@@ -173,7 +186,9 @@ const askDelete = (name, row) => {
 const deleteMember = async (memEmail) => {
     confirmState.value = {
         open: true,
+        title: 'db.confirmTitle',
         message: t('db.confirmDelete', { email: memEmail }),
+        confirmLabel: 'db.delete',
         action: async () => {
             error.value = ''
             try {
@@ -189,7 +204,9 @@ const deleteMember = async (memEmail) => {
 const deleteCart = async (cartId) => {
     confirmState.value = {
         open: true,
+        title: 'db.confirmTitle',
         message: t('db.confirmDeleteCart', { id: cartId }),
+        confirmLabel: 'db.delete',
         action: async () => {
             error.value = ''
             try {
@@ -197,6 +214,25 @@ const deleteCart = async (cartId) => {
                 await loadOverview()
             } catch (requestError) {
                 error.value = requestError.response?.data?.error || 'db.deleteCartFail'
+            }
+        }
+    }
+}
+
+const askRoleChange = (row) => {
+    const dutyId = row.dutyId === 'admin' ? 'member' : 'admin'
+    confirmState.value = {
+        open: true,
+        title: 'db.confirmRoleTitle',
+        message: t('db.confirmRoleChange', { email: row.memEmail, role: t(`db.role.${dutyId}`) }),
+        confirmLabel: dutyId === 'admin' ? 'db.roleToAdmin' : 'db.roleToMember',
+        action: async () => {
+            error.value = ''
+            try {
+                await axios.put(`http://localhost:3000/database/members/${encodeURIComponent(row.memEmail)}/role`, { dutyId })
+                await loadOverview()
+            } catch (requestError) {
+                error.value = requestError.response?.data?.error || 'db.changeRoleFail'
             }
         }
     }
@@ -229,6 +265,10 @@ th { color: #53636d; background: #f7f9f8; font-size: 11px; }
 td { color: #33434c; }
 .delete-member { padding: 6px 10px; color: #c0392b; background: #fff; border: 1px solid #e2b8b2; border-radius: 5px; cursor: pointer; font-weight: 700; }
 .delete-member:hover { color: #fff; background: #c0392b; }
+.table-row-actions { display: flex; align-items: center; gap: 8px; }
+.change-role { padding: 6px 10px; color: #056257; background: #fff; border: 1px solid #8ccfc2; border-radius: 5px; cursor: pointer; font-weight: 700; }
+.change-role:hover:not(:disabled) { color: #fff; background: #056257; }
+.change-role:disabled { opacity: .55; cursor: not-allowed; }
 .empty-table, .database-loading, .database-error { padding: 22px; color: #71808a; text-align: center; }
 .database-error { color: #c0392b; }
 .confirm-overlay { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; background: rgba(15, 23, 42, .5); }
@@ -260,6 +300,8 @@ td { color: #33434c; }
 :root[data-theme="sky"] td { color: var(--ink); }
 :root[data-theme="sky"] .delete-member { color: var(--coral-ink); background: var(--surface); border-color: var(--coral); }
 :root[data-theme="sky"] .delete-member:hover { color: #fff; background: var(--coral-ink); }
+:root[data-theme="sky"] .change-role { color: var(--sky-deep); background: var(--surface); border-color: var(--sky-bright); }
+:root[data-theme="sky"] .change-role:hover { color: #fff; background: var(--sky-deep); }
 :root[data-theme="sky"] tbody tr:nth-child(even) { background: var(--bg); }
 :root[data-theme="sky"] tbody tr:hover { background: var(--sky-soft); }
 :root[data-theme="sky"] .empty-table, :root[data-theme="sky"] .database-loading { padding: 32px; color: var(--ink-muted); font-size: 16px; }

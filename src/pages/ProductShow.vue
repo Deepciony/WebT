@@ -25,12 +25,21 @@
                     <div><dt>{{ t('detail.remark') }}</dt><dd>{{ product.pdRemark || '-' }}</dd></div>
                 </dl>
 
+                <div class="detail-quantity" role="group" :aria-label="t('cartdb.qty')">
+                    <span>{{ t('cartdb.qty') }}</span>
+                    <div class="quantity-control">
+                        <button type="button" :disabled="quantity <= 1 || busy" :aria-label="t('cart.decrease', { name: product.pdName })" @click="quantity--">−</button>
+                        <output class="sk-mono" aria-live="polite">{{ quantity }}</output>
+                        <button type="button" :disabled="busy" :aria-label="t('cart.increase', { name: product.pdName })" @click="quantity++">+</button>
+                    </div>
+                </div>
+
                 <div class="detail-actions">
                     <button class="sk-btn sk-btn-big" type="button" :disabled="busy" @click="addToCart">
                         <SkyIcon :name="added ? 'check' : 'cart'" :size="22" />
                         {{ t(added ? 'product.added' : 'product.add') }}
                     </button>
-                    <router-link to="/manage" class="sk-btn sk-btn-big sk-btn-ghost">
+                    <router-link v-if="authStore.member?.dutyId === 'admin'" to="/manage" class="sk-btn sk-btn-big sk-btn-ghost">
                         <SkyIcon name="pencil" :size="22" />
                         {{ t('manage.edit') }}
                     </router-link>
@@ -61,6 +70,7 @@ const loading = ref(true)
 const busy = ref(false)
 const added = ref(false)
 const message = ref('')
+const quantity = ref(1)
 
 const imageSrc = computed(() => product.value?.logosrc
     ? `http://localhost:3000${product.value.logosrc}`
@@ -81,7 +91,7 @@ onMounted(async () => {
 const addToCart = async () => {
     busy.value = true
     try {
-        await cartStore.addProduct(product.value)
+        await cartStore.addProduct(product.value, quantity.value)
         added.value = true
         message.value = ''
     } catch (err) {
@@ -108,6 +118,11 @@ const addToCart = async () => {
 .detail-table dt { color: #71808a; font-size: 14px; }
 .detail-table dd { margin: 0; color: #2c3e50; font-weight: 700; text-align: right; overflow-wrap: anywhere; }
 .detail-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.detail-quantity { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 20px; margin: 0 0 20px; padding: 12px 0 16px; color: #71808a; font-weight: 700; }
+.quantity-control { display: flex; align-items: center; gap: 8px; padding: 4px; border: 1px solid #dce5df; border-radius: 10px; }
+.quantity-control button { width: 40px; height: 40px; color: #198754; background: #f4f7f5; border: 0; border-radius: 7px; cursor: pointer; font-size: 20px; font-weight: 700; }
+.quantity-control button:disabled { color: #9ca3af; cursor: not-allowed; }
+.quantity-control output { min-width: 36px; color: #2c3e50; text-align: center; }
 
 /* Skylearn */
 :root[data-theme="sky"] .detail-back { color: var(--sky-deep); }
@@ -119,6 +134,12 @@ const addToCart = async () => {
 :root[data-theme="sky"] .detail-table div { padding: 16px 0; border-color: var(--outline); }
 :root[data-theme="sky"] .detail-table dt { color: var(--ink-muted); font-size: 16px; }
 :root[data-theme="sky"] .detail-table dd { color: var(--ink); }
+:root[data-theme="sky"] .detail-quantity { color: var(--ink-muted); }
+:root[data-theme="sky"] .quantity-control { gap: 6px; background: var(--sunken); border: 0; border-radius: 14px; }
+:root[data-theme="sky"] .quantity-control button { width: 48px; height: 48px; color: var(--sky-deep); background: var(--surface); border: 1px solid var(--outline); border-radius: 11px; }
+:root[data-theme="sky"] .quantity-control button:hover:not(:disabled) { color: #fff; background: var(--sky); border-color: var(--sky); }
+:root[data-theme="sky"] .quantity-control button:disabled { color: var(--ink-faint); background: var(--surface); }
+:root[data-theme="sky"] .quantity-control output { min-width: 42px; color: var(--ink); }
 @media (max-width: 800px) {
     .detail-layout { grid-template-columns: 1fr; gap: 24px; }
     .detail-actions .sk-btn { width: 100%; }

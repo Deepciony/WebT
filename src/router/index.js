@@ -26,7 +26,7 @@ const routes = [
         path: '/manage',
         name: 'ProductManage',
         component: ProductManage,
-        meta: { requiresAuth: true },
+        meta: { requiresAuth: true, requiresAdmin: true },
     },
     {
         path: '/pagemember',
@@ -42,7 +42,7 @@ const routes = [
         path: '/database',
         name: 'DatabaseOverview',
         component: DatabaseOverview,
-        meta: { requiresAuth: true },
+        meta: { requiresAuth: true, requiresAdmin: true },
     },
     {
         // The route carries the product id, so the path must name it too
@@ -91,6 +91,10 @@ router.beforeEach(async (to) => {
 
     if (to.meta.requiresAuth && !authStore.isLogin) {
         return { name: 'Login' };
+    }
+
+    if (to.meta.requiresAdmin && authStore.member?.dutyId !== 'admin') {
+        return { name: 'PageMember' };
     }
 
     // Already signed in: skip the login/register pages

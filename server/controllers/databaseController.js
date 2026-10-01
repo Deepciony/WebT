@@ -54,8 +54,24 @@ export async function deleteMember(req, res) {
     if (!isAdmin && req.member?.memEmail !== memEmail) {
         return res.status(403).json({ error: 'db.deleteMemberNotAllowed' });
     }
+    if (isAdmin && req.member?.memEmail === memEmail) {
+        return res.status(403).json({ error: 'db.deleteOwnAccount' });
+    }
 
     try {
+        const target = await database.query({
+            text: `SELECT "dutyId" FROM "members" WHERE "memEmail" = $1;`,
+            values: [memEmail]
+        });
+        if (!target.rowCount) {
+            return res.status(404).json({ error: 'db.memberNotFound' });
+        }
+        if (target.rows[0].dutyId === 'admin') {
+            const admins = await database.query(`SELECT COUNT(*) AS count FROM "members" WHERE "dutyId" = 'admin';`);
+            if (Number(admins.rows[0].count) <= 1) {
+                return res.status(409).json({ error: 'db.lastAdminRequired' });
+            }
+        }
         const result = await database.query({
             text: `DELETE FROM "members" WHERE "memEmail" = $1 RETURNING "memEmail";`,
             values: [memEmail]
@@ -67,6 +83,41 @@ export async function deleteMember(req, res) {
     } catch (err) {
         console.error(err);
         return res.status(500).json({ error: 'db.deleteMemberFail' });
+    }
+}
+
+export async function updateMemberRole(req, res) {
+    const memEmail = typeof req.params.memEmail === 'string' ? req.params.memEmail.trim() : '';
+    const dutyId = req.body?.dutyId;
+    if (!memEmail || !['admin', 'member'].includes(dutyId)) {
+        return res.status(400).json({ error: 'db.memberRoleRequired' });
+    }
+    if (req.member?.memEmail === memEmail) {
+        return res.status(403).json({ error: 'db.changeOwnRole' });
+    }
+
+    try {
+        const current = await database.query({
+            text: `SELECT "dutyId" FROM "members" WHERE "memEmail" = $1;`,
+            values: [memEmail]
+        });
+        if (!current.rowCount) {
+            return res.status(404).json({ error: 'db.memberNotFound' });
+        }
+        if (current.rows[0].dutyId === 'admin' && dutyId === 'member') {
+            const admins = await database.query(`SELECT COUNT(*) AS count FROM "members" WHERE "dutyId" = 'admin';`);
+            if (Number(admins.rows[0].count) <= 1) {
+                return res.status(409).json({ error: 'db.lastAdminRequired' });
+            }
+        }
+        const result = await database.query({
+            text: `UPDATE "members" SET "dutyId" = $1 WHERE "memEmail" = $2 RETURNING "memEmail", "dutyId";`,
+            values: [dutyId, memEmail]
+        });
+        return res.status(200).json(result.rows[0]);
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: 'db.changeRoleFail' });
     }
 }
 

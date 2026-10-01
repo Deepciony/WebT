@@ -46,12 +46,5 @@ export const useAuthStore = defineStore('auth', () => {
         return res.data
     }
 
-    // Dev-only: pretend to be signed in when no API/DB is running
-    const fakeLogin = () => {
-        member.value = { memEmail: 'dev@localhost', memName: 'Dev', dutyId: 'member', login: true }
-        isLogin.value = true
-        checked.value = true
-    }
-
-    return { isLogin, member, checked, login, logout, getMember, memLogout, updateProfile, fakeLogin }
+    return { isLogin, member, checked, login, logout, getMember, memLogout, updateProfile }
 })

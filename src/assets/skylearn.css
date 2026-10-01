@@ -108,7 +108,10 @@
 :root[data-theme="sky"] .sk-btn-ghost { color: var(--ink-muted); background: var(--surface); border: 1px solid var(--outline); }
 :root[data-theme="sky"] .sk-btn-ghost:hover { color: var(--ink); background: var(--sunken); border-color: var(--outline-strong); }
 :root[data-theme="sky"] .sk-btn-coral { color: var(--coral-ink); background: var(--surface); border: 1px solid var(--coral); }
-:root[data-theme="sky"] .sk-btn-coral:hover { color: var(--coral-ink); background: var(--coral-soft); }
+:root[data-theme="sky"] .sk-btn-coral:hover,
+:root[data-theme="sky"] .sk-btn-coral:focus-visible,
+:root[data-theme="sky"] .sk-btn-coral:active { color: var(--coral-ink); background: var(--coral-soft); border-color: var(--coral); border-bottom-color: var(--coral); }
+:root[data-theme="sky"] .sk-btn-coral:disabled { color: var(--coral-ink); background: var(--coral-soft); border-color: var(--coral); border-bottom-color: var(--coral); cursor: not-allowed; opacity: .65; }
 :root[data-theme="sky"] .sk-btn-block { width: 100%; }
 
 /* Forms */
