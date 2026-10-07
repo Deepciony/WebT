@@ -738,7 +738,8 @@ router.delete("/members/photo", requireLogin, memberC.deleteMemberPhoto);`, 'js'
 <section>
   <h2><span class="no">15</span>Lab 13: เอกสาร API ด้วย Swagger</h2>
   <p>Swagger UI อ่านไฟล์ OpenAPI (เขียนด้วย YAML) แล้วสร้างหน้าเอกสาร API ที่กดทดลองยิง request ได้ทันที
-     เปิดดูได้ที่ <b>http://localhost:3000/api-docs</b></p>
+     เปิดดูได้ที่ <b>http://localhost:3000/api-docs</b> หรือกดปุ่ม <b>เอกสาร API</b> ที่หัวหน้าฐานข้อมูล
+     (หน้านี้เข้าได้เฉพาะแอดมิน)</p>
 
   <h3>ติดตั้ง</h3>
   ${code('Terminal', `npm install swagger-ui-express yaml`, 'bash')}
@@ -776,6 +777,36 @@ router.delete("/members/photo", requireLogin, memberC.deleteMemberPhoto);`, 'js'
   ${code('server/swagger.yaml — cookie auth', swaggerYamlPart('  securitySchemes:', '  parameters:'), 'yaml')}
   ${note('warn', 'ทดลองยิงจากหน้า Swagger', 'cookie เป็น httpOnly + SameSite=Strict ปุ่ม Try it out จะใช้ได้ก็ต่อเมื่อ login ผ่านหน้าเว็บในเบราว์เซอร์เดียวกันมาก่อน เพราะ Swagger UI ยิงจาก origin <code>localhost:3000</code> ซึ่งเบราว์เซอร์จะแนบ cookie ให้เอง ส่วน endpoint ที่ต้องเป็นแอดมินก็ต้องล็อกอินด้วยบัญชีแอดมิน')}
 
+  <h3>ถ้าทำตามเอกสารแลปตรง ๆ จะเจออะไร</h3>
+  <p>สามจุดนี้คือเหตุผลที่โปรเจกต์นี้เขียนต่างจากแลป ไม่ใช่เพราะอยากทำให้ซับซ้อนขึ้น</p>
+  <table>
+    <tr><th style="width:26%">ทำตามแลป</th><th style="width:32%">ผลที่เกิด</th><th>โปรเจกต์นี้ทำอย่างไร</th></tr>
+    <tr>
+      <td><code>fs.readFileSync('services/swagger.yaml')</code></td>
+      <td>path แบบนี้อิงโฟลเดอร์ที่สั่งรัน ไม่ใช่ที่อยู่ของไฟล์โค้ด ถ้าไม่มีโฟลเดอร์นั้นหรือรันจากที่อื่น
+          จะได้ <code>ENOENT</code> และเพราะบรรทัดนี้อยู่นอก try/catch เซิร์ฟเวอร์จะตายตั้งแต่ตอนโหลดโมดูล
+          <b>ไม่ใช่แค่หน้า /api-docs เสีย แต่ API ทั้งตัวไม่ขึ้น</b></td>
+      <td>อ่านไฟล์โดยอิงตำแหน่งของ <code>server/index.js</code> เอง
+          (<code>path.dirname(fileURLToPath(import.meta.url))</code>) รันจากโฟลเดอร์ไหนก็หาเจอ</td>
+    </tr>
+    <tr>
+      <td>schema <code>new_product</code> มี <code>pdId</code> แต่ไม่มี <code>brandName</code></td>
+      <td>คนอ่านเอกสารกด Try it out แล้วส่งตามที่เขียนไว้ จะได้ <code>400</code> ทันที
+          เพราะ <code>createProduct</code> บังคับ <code>brandName</code>
+          ส่วน <code>pdId</code> ที่ส่งไปก็ถูกทิ้ง เนื่องจากรหัสสินค้าถูกสร้างอัตโนมัติ
+          <b>เอกสารที่ไม่ตรงกับ API อันตรายกว่าไม่มีเอกสาร เพราะคนเชื่อแล้วเขียนโค้ดตาม</b></td>
+      <td>schema ตรงกับสิ่งที่ controller ตรวจจริง: required คือ pdName, pdPrice, brandId, brandName, pdTypeId</td>
+    </tr>
+    <tr>
+      <td>อธิบายเฉพาะ <code>/products</code></td>
+      <td>อีก 30 route ไม่มีใครรู้ว่ามีอยู่ ต้องไปไล่อ่าน <code>server/routes/</code> เอง
+          และไม่มี <code>securitySchemes</code> จึงไม่รู้ว่า endpoint ไหนต้องล็อกอินหรือต้องเป็นแอดมิน
+          กดทดลองแล้วได้ 401/403 โดยไม่รู้สาเหตุ</td>
+      <td>เขียนครบทั้ง 33 route พร้อม cookie auth และสถานะ 403 ของ endpoint ที่ต้องเป็นแอดมิน
+          Swagger UI จึงขึ้นรูปกุญแจให้เห็นชัด</td>
+    </tr>
+  </table>
+
   <h3>สิ่งที่เอกสารนี้ครอบคลุม</h3>
   <table>
     <tr><th style="width:22%">กลุ่ม</th><th style="width:14%">จำนวน</th><th>ตัวอย่าง endpoint</th></tr>
@@ -795,6 +826,7 @@ router.delete("/members/photo", requireLogin, memberC.deleteMemberPhoto);`, 'js'
     <tr><td>ฟิลเตอร์ทุกหน้า</td><td>หน้าสินค้า (แบรนด์ ประเภท ช่วงราคา การเรียง) หน้าจัดการสินค้า (คำค้น แบรนด์ ประเภท ช่วงราคา) ประวัติคำสั่งซื้อ (รหัสตะกร้า สถานะ ช่วงวันที่ ช่วงยอดเงิน จำนวน) ตะกร้า (คำค้น การเรียง) และหน้าฐานข้อมูล (กรองชื่อตาราง ค้นหาในแถว เลือกคอลัมน์) ทั้งหมดกรองฝั่งเบราว์เซอร์จากข้อมูลที่โหลดมาแล้ว ไม่ยิง API เพิ่ม</td></tr>
     <tr><td>ตัวเลือกแบบ custom</td><td><code>src/components/ui/SkySelect.vue</code> แทน <code>&lt;select&gt;</code> ทุกจุด รองรับคีย์บอร์ดครบ และ <code>SkyRange.vue</code> สำหรับช่วงราคา / ยอดเงิน เลือกจากช่วงสำเร็จรูปหรือกรอกเองก็ได้</td></tr>
     <tr><td>ลบข้อมูลได้ทุกส่วน</td><td>สินค้า (<code>DELETE /products/:id</code> ลบไฟล์รูปตามไปด้วย) แถวของ products / brands / pdTypes ในหน้าฐานข้อมูล (<code>DELETE /database/rows/:table/:id</code> เฉพาะ admin และชื่อตารางมาจาก whitelist ในโค้ด) สมาชิก ตะกร้า สินค้าในตะกร้า และรูปโปรไฟล์</td></tr>
+    <tr><td>ปุ่มเปิดเอกสาร API</td><td>หัวหน้าฐานข้อมูล (หน้าแอดมิน) มีปุ่มเปิด <code>/api-docs</code> ในแท็บใหม่ จะได้ไม่ต้องจำ URL เอง</td></tr>
     <tr><td>สองภาษา</td><td>ทุกข้อความอยู่ใน <code>src/i18n.js</code> ทั้ง en และ th รวมถึงข้อความที่ API ส่งกลับมา (API ส่งเป็นคีย์ เช่น <code>photo.uploaded</code> แล้วหน้าเว็บแปลเอง)</td></tr>
   </table>
 </section>
