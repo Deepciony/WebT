@@ -7,7 +7,12 @@
                 <p>{{ t('db.lead') }}</p>
                 <small class="security-note">{{ t('db.note') }}</small>
             </div>
-            <button class="refresh-button sk-btn sk-btn-soft" type="button" @click="loadOverview">{{ t('db.refresh') }}</button>
+            <div class="database-actions">
+                <a class="api-docs-link sk-btn sk-btn-ghost" :href="apiDocsUrl" target="_blank" rel="noopener">
+                    <SkyIcon name="database" :size="20" /> {{ t('db.apiDocs') }}
+                </a>
+                <button class="refresh-button sk-btn sk-btn-soft" type="button" @click="loadOverview">{{ t('db.refresh') }}</button>
+            </div>
         </div>
 
         <p v-if="error" class="database-error sk-msg error" role="alert">{{ t(error) }}</p>
@@ -89,9 +94,12 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import axios from 'axios'
 import { t } from '../i18n.js'
 import { useAuthStore } from '../stores/authStore.js'
+import SkyIcon from '../components/ui/SkyIcon.vue'
 import SkySelect from '../components/ui/SkySelect.vue'
 
 const authStore = useAuthStore()
+// the Swagger document is served by the API, not by the frontend
+const apiDocsUrl = 'http://localhost:3000/api-docs'
 
 // which column identifies a row, per table
 const rowKey = { members: 'memEmail', carts: 'cartId', products: 'pdId', brands: 'brandId', pdTypes: 'pdTypeId' }
@@ -249,6 +257,8 @@ onMounted(loadOverview)
 .security-note { display: block; margin-top: 6px; color: #9a6b18; font-size: 11px; }
 .database-kicker, .table-label { color: #198754 !important; font-size: 11px; font-weight: 700; letter-spacing: .14em; }
 .database-kicker { margin-bottom: 8px !important; }
+.database-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.api-docs-link { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
 .refresh-button { padding: 10px 16px; color: #fff; background: #2c3e50; border: 0; border-radius: 5px; cursor: pointer; font-weight: 700; }
 .database-tables { display: grid; grid-template-columns: 1fr; gap: 22px; max-width: 1180px; margin: auto; }
 .database-table { min-width: 0; overflow: hidden; background: #fff; border: 1px solid #dfe6e2; border-radius: 9px; box-shadow: 0 4px 15px rgba(44, 62, 80, .06); }
