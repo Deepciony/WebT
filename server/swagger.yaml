@@ -1,0 +1,1128 @@
+openapi: 3.0.4
+
+info:
+  title: KUSHOP API
+  description: |
+    KUSHOP Project from Kasetsart University Sriracha Campus.<br>
+    เอกสารนี้อธิบายทุก endpoint ของ backend: สินค้า สมาชิก ตะกร้าสินค้า และการดูแลข้อมูล<br><br>
+    <b>การยืนยันตัวตน</b> ใช้ JWT ที่เก็บใน cookie ชื่อ <code>token</code> แบบ httpOnly
+    ซึ่งเซิร์ฟเวอร์ตั้งให้ตอน <code>POST /members/login</code> สำเร็จ
+    เบราว์เซอร์จะแนบ cookie ให้เองถ้าเรียกจาก origin ที่อยู่ใน CORS whitelist
+    (5173, 4173 และ port 80)
+  version: "1.0"
+
+servers:
+  - url: http://localhost:3000/
+    description: Local development
+
+tags:
+  - name: Products
+    description: สินค้าและรูปสินค้า
+  - name: Members
+    description: สมาชิก การเข้าสู่ระบบ และรูปโปรไฟล์
+  - name: Carts
+    description: ตะกร้าสินค้าและคำสั่งซื้อ (Lab 11)
+  - name: Database
+    description: ดูและลบข้อมูลในตาราง
+
+paths:
+  # ------------------------------------------------------------------ Products
+  /products:
+    get:
+      tags: [Products]
+      summary: Returns a list all of products.
+      description: |
+        List all products in array of object format.<br>
+        Each product contains details like product ID, name, price, brand and product type.
+      responses:
+        '200':
+          description: A JSON array of Products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/products'
+        '500':
+          description: Server error.
+
+    post:
+      tags: [Products]
+      summary: Creates a new Product.
+      description: เฉพาะแอดมิน รหัสสินค้าจะถูกสร้างให้อัตโนมัติจากเลขล่าสุด
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/new_product'
+      responses:
+        '201':
+          description: Product is created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/products'
+        '400':
+          description: Required fields are missing or the price is invalid.
+        '401':
+          description: Login is required.
+        '403':
+          description: Admin role is required.
+        '409':
+          description: Product ID is existed.
+        '500':
+          description: Server Error
+
+  /products/three:
+    get:
+      tags: [Products]
+      summary: Returns three products for the home page.
+      responses:
+        '200':
+          description: A JSON array of three Products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/products'
+        '500':
+          description: Server error.
+
+  /products/{id}:
+    get:
+      tags: [Products]
+      summary: Returns the specify products.
+      description: Show a product in object format.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Product ID
+          schema:
+            type: string
+          example: "001"
+      responses:
+        '200':
+          description: A JSON object of the Product
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/products'
+        '404':
+          description: A product with the specified ID was not found.
+        '500':
+          description: Server error.
+
+    put:
+      tags: [Products]
+      summary: Updates an existing Product.
+      description: เฉพาะแอดมิน
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Product ID
+          schema:
+            type: string
+          example: "001"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/new_product'
+      responses:
+        '200':
+          description: Product is updated.
+        '400':
+          description: Required fields are missing or the price is invalid.
+        '401':
+          description: Login is required.
+        '403':
+          description: Admin role is required.
+        '404':
+          description: A product with the specified ID was not found.
+        '500':
+          description: Server error.
+
+    delete:
+      tags: [Products]
+      summary: Deletes a Product and its image file.
+      description: เฉพาะแอดมิน ลบไฟล์รูปของสินค้าตามไปด้วย
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Product ID
+          schema:
+            type: string
+          example: "001"
+      responses:
+        '200':
+          description: Product is deleted.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted:
+                    type: string
+        '401':
+          description: Login is required.
+        '403':
+          description: Admin role is required.
+        '404':
+          description: A product with the specified ID was not found.
+        '409':
+          description: The product is already in a cart, so it cannot be deleted.
+        '500':
+          description: Server error.
+
+  /products/{id}/image:
+    get:
+      tags: [Products]
+      summary: Returns the product image file.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Product ID
+          schema:
+            type: string
+          example: "001"
+      responses:
+        '200':
+          description: The image file
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Image not found
+
+    post:
+      tags: [Products]
+      summary: Uploads the product image.
+      description: เฉพาะแอดมิน ไฟล์ต้องเป็น jpeg, png หรือ webp ขนาดไม่เกิน 5 MB
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Product ID
+          schema:
+            type: string
+          example: "001"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                image:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Image is uploaded.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  imageUrl:
+                    type: string
+        '400':
+          description: The file is missing or not an accepted image.
+        '401':
+          description: Login is required.
+        '403':
+          description: Admin role is required.
+        '500':
+          description: Server error.
+
+  /search/products/{id}:
+    get:
+      tags: [Products]
+      summary: Searches products by keyword.
+      description: ค้นหาจากรหัสสินค้า ชื่อ รายละเอียด ชื่อแบรนด์ และประเภทสินค้า
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Keyword
+          schema:
+            type: string
+          example: shirt
+      responses:
+        '200':
+          description: A JSON array of matching Products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/products'
+        '500':
+          description: Server error.
+
+  # ------------------------------------------------------------------- Members
+  /members:
+    post:
+      tags: [Members]
+      summary: Registers a new member.
+      description: รหัสผ่านต้องยาวอย่างน้อย 6 ตัวอักษร และถูกเก็บเป็น bcrypt hash เท่านั้น
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/register_member'
+      responses:
+        '200':
+          description: ผลการสมัคร ดูที่ฟิลด์ regist ว่าสำเร็จหรือไม่
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/register_result'
+
+  /members/login:
+    post:
+      tags: [Members]
+      summary: Signs a member in and sets the token cookie.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                loginName:
+                  type: string
+                  example: user@ku.th
+                password:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: |
+            ผลการเข้าสู่ระบบ ถ้า login เป็น true เซิร์ฟเวอร์จะตั้ง cookie ชื่อ token
+            แบบ httpOnly อายุ 1 ชั่วโมง
+          headers:
+            Set-Cookie:
+              description: token=jwt; HttpOnly; Secure; SameSite=Strict
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/login_result'
+
+  /members/dev-admin:
+    post:
+      tags: [Members]
+      summary: Signs in as the development admin account.
+      description: |
+        ใช้ตอนพัฒนาเท่านั้น ปิดอยู่เสมอยกเว้นตั้ง <code>ENABLE_DEV_ADMIN_BYPASS=true</code>
+        ใน .env และไม่ได้รันโหมด production<br>
+        ต้องส่ง passcode ให้ตรงกับ <code>DEV_ADMIN_PASSCODE</code> และบัญชี
+        <code>DEV_ADMIN_EMAIL</code> ต้องมีสิทธิ์ admin อยู่จริง
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [passcode]
+              properties:
+                passcode:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: Signed in, the token cookie is set.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  login:
+                    type: boolean
+        '401':
+          description: The passcode is wrong.
+        '404':
+          description: The bypass is switched off.
+        '403':
+          description: The configured account is missing or is not an admin.
+        '503':
+          description: DEV_ADMIN_EMAIL is not configured.
+        '500':
+          description: Server error.
+
+  /members/logout:
+    get:
+      tags: [Members]
+      summary: Clears the token cookie.
+      responses:
+        '200':
+          description: Logout Success
+
+  /members/detail:
+    get:
+      tags: [Members]
+      summary: Returns the signed-in member read from the token cookie.
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: |
+            ถ้ายังไม่ได้เข้าสู่ระบบจะได้ login เป็น false ไม่ใช่สถานะ 401
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/member_detail'
+
+  /members/profile:
+    put:
+      tags: [Members]
+      summary: Updates the signed-in member's name or password.
+      description: เปลี่ยนรหัสผ่านต้องส่ง currentPassword, newPassword และ confirmPassword มาครบ
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                memName:
+                  type: string
+                currentPassword:
+                  type: string
+                  format: password
+                newPassword:
+                  type: string
+                  format: password
+                confirmPassword:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: Profile is updated and a fresh token cookie is sent.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/member_detail'
+        '400':
+          description: The name is missing or the password fields are incomplete.
+        '401':
+          description: Login is required or the current password is wrong.
+        '404':
+          description: Member not found.
+        '500':
+          description: Server error.
+
+  /members/uploadimg:
+    post:
+      tags: [Members]
+      summary: Uploads the signed-in member's photo.
+      description: |
+        ชื่อไฟล์มาจากอีเมลใน token เสมอ ไม่ใช่จากฟอร์ม<br>
+        รับ jpeg, png หรือ webp ขนาดไม่เกิน 5 MB และเก็บนามสกุลจริงไว้
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Photo is uploaded.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: photo.uploaded
+                  photo:
+                    type: string
+                    example: /img_mem/user@ku.th.jpg
+        '400':
+          description: The file is missing or not an accepted image.
+        '401':
+          description: Login is required.
+
+  /members/photo:
+    delete:
+      tags: [Members]
+      summary: Removes the signed-in member's photo.
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Photo is removed, the page falls back to default.jpg.
+        '401':
+          description: Login is required.
+        '404':
+          description: There is no photo to remove.
+        '500':
+          description: Server error.
+
+  # --------------------------------------------------------------------- Carts
+  /carts/chkcart:
+    post:
+      tags: [Carts]
+      summary: Checks whether the member has an open cart.
+      description: เจ้าของตะกร้าอ่านจาก token เสมอ ไม่ได้รับมาจาก body
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: |
+            cartExist บอกว่ามีตะกร้าที่ยังไม่ยืนยันอยู่หรือไม่<br>
+            ถ้ายังไม่ได้เข้าสู่ระบบจะได้ errormessage ว่า Login is required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cartExist:
+                    type: boolean
+                  cartId:
+                    type: string
+                    example: "202610070001"
+                  error:
+                    type: boolean
+                  errormessage:
+                    type: string
+
+  /carts/addcart:
+    post:
+      tags: [Carts]
+      summary: Creates a cart, or returns the open one.
+      description: รหัสตะกร้าเป็น YYYYMMDD ตามด้วยเลขลำดับของวันนั้น
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: cartOK บอกผล และ messageAddCart คือรหัสตะกร้า
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cartOK:
+                    type: boolean
+                  messageAddCart:
+                    type: string
+                    example: "202610070001"
+
+  /carts/addcartdtl:
+    post:
+      tags: [Carts]
+      summary: Adds a product to the cart.
+      description: |
+        ราคาถูกอ่านจากตาราง products เสมอ ไม่รับราคาจาก body<br>
+        ถ้าสินค้าเดิมอยู่ในตะกร้าแล้วจะบวกจำนวนเพิ่มให้
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cartId:
+                  type: string
+                  example: "202610070001"
+                pdId:
+                  type: string
+                  example: "001"
+                qty:
+                  type: integer
+                  example: 1
+      responses:
+        '200':
+          description: cartDtlOK บอกผล
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cart_detail_result'
+
+  /carts/setcartdtlqty:
+    put:
+      tags: [Carts]
+      summary: Sets the quantity of one product in the cart.
+      description: ตะกร้าที่ยืนยันแล้วแก้ไม่ได้
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cartId:
+                  type: string
+                pdId:
+                  type: string
+                qty:
+                  type: integer
+                  example: 2
+      responses:
+        '200':
+          description: cartDtlOK บอกผล
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cart_detail_result'
+
+  /carts/sumcart/{id}:
+    get:
+      tags: [Carts]
+      summary: Returns the total quantity and amount of a cart.
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/cartId'
+      responses:
+        '200':
+          description: A JSON array with one summary row
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    sqty:
+                      type: integer
+                    sprice:
+                      type: number
+
+  /carts/getcart/{id}:
+    get:
+      tags: [Carts]
+      summary: Returns one cart, only if it belongs to the signed-in member.
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/cartId'
+      responses:
+        '200':
+          description: A JSON array with the cart, or an empty array when it is somebody else's
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/cart'
+
+  /carts/getcartdtl/{id}:
+    get:
+      tags: [Carts]
+      summary: Returns the products inside a cart.
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/cartId'
+      responses:
+        '200':
+          description: A JSON array of cart lines
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/cart_detail'
+
+  /carts/getcartbycus:
+    post:
+      tags: [Carts]
+      summary: Returns the order history of the signed-in member.
+      description: ใช้ POST เพื่อให้เจ้าของมาจาก cookie ไม่ใช่จาก URL
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: A JSON array of carts with their totals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/cart_summary'
+
+  /carts/cfcart/{id}:
+    put:
+      tags: [Carts]
+      summary: Confirms the cart (places the order).
+      description: หลังยืนยันแล้วตะกร้าใบนี้แก้ไขไม่ได้อีก
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/cartId'
+      responses:
+        '200':
+          description: cfOK บอกผล
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cfOK:
+                    type: boolean
+                  message:
+                    type: string
+
+  /carts/delcartdtl/{id}/{pdId}:
+    delete:
+      tags: [Carts]
+      summary: Removes one product from the cart.
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/cartId'
+        - name: pdId
+          in: path
+          required: true
+          description: Product ID
+          schema:
+            type: string
+          example: "001"
+      responses:
+        '200':
+          description: delOK บอกผล
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/delete_result'
+
+  /carts/delcart/{id}:
+    delete:
+      tags: [Carts]
+      summary: Deletes the whole cart with its lines.
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/cartId'
+      responses:
+        '200':
+          description: delOK บอกผล
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/delete_result'
+
+  # ------------------------------------------------------------------ Database
+  /database/overview:
+    get:
+      tags: [Database]
+      summary: Returns every table with its columns and rows.
+      description: เฉพาะแอดมิน รหัสผ่านของสมาชิกถูกปิดไว้ ไม่ถูกส่งออกมา
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: A JSON object with one entry per table
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tables:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/table_overview'
+        '401':
+          description: Login is required.
+        '403':
+          description: Admin role is required.
+        '500':
+          description: Server error.
+
+  /database/members/{memEmail}:
+    delete:
+      tags: [Database]
+      summary: Deletes a member.
+      description: สมาชิกทั่วไปลบได้เฉพาะบัญชีตัวเอง แอดมินลบได้ทุกคน
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: memEmail
+          in: path
+          required: true
+          description: Member email
+          schema:
+            type: string
+          example: user@ku.th
+      responses:
+        '200':
+          description: Member is deleted.
+        '400':
+          description: Member email is required.
+        '401':
+          description: Login is required.
+        '403':
+          description: Only an admin may delete somebody else.
+        '404':
+          description: Member not found.
+        '500':
+          description: Server error.
+
+  /database/carts/{cartId}:
+    delete:
+      tags: [Database]
+      summary: Deletes a cart from the history.
+      description: สมาชิกทั่วไปลบได้เฉพาะตะกร้าของตัวเอง แอดมินลบได้ทุกใบ
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: cartId
+          in: path
+          required: true
+          description: Cart ID
+          schema:
+            type: string
+          example: "202610070001"
+      responses:
+        '200':
+          description: Cart is deleted.
+        '400':
+          description: Cart ID is required.
+        '401':
+          description: Login is required.
+        '403':
+          description: The cart belongs to somebody else.
+        '404':
+          description: Cart not found.
+        '500':
+          description: Server error.
+
+  /database/members/{memEmail}/role:
+    put:
+      tags: [Database]
+      summary: Changes a member's role.
+      description: |
+        เฉพาะแอดมิน เปลี่ยนสิทธิ์ระหว่าง admin กับ member<br>
+        แก้สิทธิ์ของตัวเองไม่ได้ และลดสิทธิ์แอดมินคนสุดท้ายไม่ได้
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: memEmail
+          in: path
+          required: true
+          description: Member email
+          schema:
+            type: string
+          example: user@ku.th
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [dutyId]
+              properties:
+                dutyId:
+                  type: string
+                  enum: [admin, member]
+      responses:
+        '200':
+          description: Role is updated.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  memEmail:
+                    type: string
+                  dutyId:
+                    type: string
+        '400':
+          description: Member email or role is missing or invalid.
+        '401':
+          description: Login is required.
+        '403':
+          description: Admin role is required, or you tried to change your own role.
+        '404':
+          description: Member not found.
+        '409':
+          description: The last admin cannot be demoted.
+        '500':
+          description: Server error.
+
+  /database/rows/{table}/{id}:
+    delete:
+      tags: [Database]
+      summary: Deletes one row of a reference table.
+      description: |
+        เฉพาะแอดมิน และเฉพาะตารางที่อยู่ใน whitelist ของเซิร์ฟเวอร์เท่านั้น<br>
+        ชื่อตารางกับคอลัมน์คีย์ไม่เคยถูกนำมาจาก URL ไปต่อใน SQL โดยตรง
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: table
+          in: path
+          required: true
+          description: Table name
+          schema:
+            type: string
+            enum: [products, brands, pdTypes]
+        - name: id
+          in: path
+          required: true
+          description: Row ID
+          schema:
+            type: string
+          example: B01
+      responses:
+        '200':
+          description: Row is deleted.
+        '400':
+          description: Rows of this table cannot be deleted here.
+        '401':
+          description: Login is required.
+        '403':
+          description: Only an admin can delete rows of this table.
+        '404':
+          description: Row not found.
+        '409':
+          description: Something still refers to this row.
+        '500':
+          description: Server error.
+
+# ------------------------------------------------------------------ components
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: token
+      description: JWT ที่เซิร์ฟเวอร์ตั้งให้ตอน login สำเร็จ (httpOnly จึงอ่านด้วย JavaScript ไม่ได้)
+
+  parameters:
+    cartId:
+      name: id
+      in: path
+      required: true
+      description: Cart ID
+      schema:
+        type: string
+      example: "202610070001"
+
+  schemas:
+    products:
+      type: object
+      properties:
+        pdId:
+          type: string
+        pdName:
+          type: string
+        pdPrice:
+          type: number
+        pdRemark:
+          type: string
+        pdTypeId:
+          type: string
+        brandId:
+          type: string
+        logosrc:
+          type: string
+          description: path ของรูปสินค้า เช่น /products/001/image
+        brand:
+          $ref: '#/components/schemas/brands'
+        pdt:
+          $ref: '#/components/schemas/productType'
+
+    brands:
+      type: object
+      properties:
+        brandId:
+          type: string
+        brandName:
+          type: string
+
+    productType:
+      type: object
+      properties:
+        pdTypeId:
+          type: string
+        pdTypeName:
+          type: string
+
+    new_product:
+      type: object
+      required: [pdName, pdPrice, brandId, brandName, pdTypeId]
+      properties:
+        pdName:
+          type: string
+        pdPrice:
+          type: number
+        pdRemark:
+          type: string
+        pdTypeId:
+          type: string
+        brandId:
+          type: string
+        brandName:
+          type: string
+
+    register_member:
+      type: object
+      required: [memEmail, memName, password]
+      properties:
+        memEmail:
+          type: string
+          example: user@ku.th
+        memName:
+          type: string
+        password:
+          type: string
+          format: password
+          minLength: 6
+
+    register_result:
+      type: object
+      properties:
+        memEmail:
+          type: string
+        memName:
+          type: string
+        createDate:
+          type: string
+          format: date-time
+        message:
+          type: string
+        regist:
+          type: boolean
+
+    login_result:
+      type: object
+      properties:
+        message:
+          type: string
+        login:
+          type: boolean
+
+    member_detail:
+      type: object
+      properties:
+        memEmail:
+          type: string
+        memName:
+          type: string
+        dutyId:
+          type: string
+          example: member
+        photo:
+          type: string
+          nullable: true
+          description: path ของรูปสมาชิก หรือ null ถ้ายังไม่มีรูป
+        login:
+          type: boolean
+
+    cart:
+      type: object
+      properties:
+        cartId:
+          type: string
+        cartDate:
+          type: string
+          format: date-time
+        cusId:
+          type: string
+        cartCf:
+          type: boolean
+          description: true คือยืนยันสั่งซื้อแล้ว
+
+    cart_detail:
+      type: object
+      properties:
+        cartId:
+          type: string
+        pdId:
+          type: string
+        pdName:
+          type: string
+        price:
+          type: number
+        qty:
+          type: integer
+
+    cart_summary:
+      type: object
+      properties:
+        row_number:
+          type: integer
+        cartId:
+          type: string
+        cartDate:
+          type: string
+          format: date-time
+        cartCf:
+          type: boolean
+        sqty:
+          type: integer
+        sprice:
+          type: number
+
+    cart_detail_result:
+      type: object
+      properties:
+        cartDtlOK:
+          type: boolean
+        messageAddCartDtl:
+          type: string
+
+    delete_result:
+      type: object
+      properties:
+        delOK:
+          type: boolean
+        message:
+          type: string
+
+    table_overview:
+      type: object
+      properties:
+        name:
+          type: string
+          example: products
+        count:
+          type: integer
+        columns:
+          type: array
+          items:
+            type: object
+            properties:
+              column_name:
+                type: string
+              data_type:
+                type: string
+        rows:
+          type: array
+          items:
+            type: object

@@ -2,6 +2,11 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
+import swaggerUI from "swagger-ui-express";
+import yaml from "yaml";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 import productRoutes from "./routes/productRoute.js";
 import databaseRoutes from "./routes/databaseRoute.js";
 import memberRoutes from "./routes/memberRoute.js";
@@ -37,6 +42,13 @@ app.use(productRoutes);
 app.use(databaseRoutes);
 app.use(memberRoutes);
 app.use(cartRoutes);
+
+// API document (Lab 13): the spec lives next to this file, so it is found
+// no matter which folder the server was started from
+const here = path.dirname(fileURLToPath(import.meta.url));
+const swaggerFile = fs.readFileSync(path.join(here, "swagger.yaml"), "utf-8");
+const swaggerDoc = yaml.parse(swaggerFile);
+app.use("/api-docs", swaggerUI.serve, swaggerUI.setup(swaggerDoc));
 
 app.listen(PORT, () => {
     console.log(`API server is running at http://localhost:${PORT}`);

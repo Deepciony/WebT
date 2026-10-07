@@ -18,6 +18,13 @@ const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8').replace(/\r\n/g,
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 const noStyle = (s) => s.replace(/\n*<style[\s\S]*?<\/style>/g, '').trimEnd()
 const scriptOnly = (s) => (s.match(/<script setup>[\s\S]*?<\/script>/) || [''])[0]
+const constFn = (src, name) => {
+    const start = src.indexOf(`const ${name} = `)
+    if (start < 0) return ''
+    const end = src.indexOf('\n}', start)
+    return src.slice(start, end + 2)
+}
+
 const fn = (src, name) => {
     const start = src.indexOf(`export async function ${name}`)
     if (start < 0) return ''
@@ -39,6 +46,8 @@ const cartController = read('server/controllers/cartController.js')
 const serverIndex = read('server/index.js')
 const pageMember = read('src/pages/PageMember.vue')
 const nginxConf = read('docs/nginx.conf.example')
+const swaggerYaml = read('server/swagger.yaml')
+const swaggerYamlPart = (from, to) => swaggerYaml.slice(swaggerYaml.indexOf(from), to ? swaggerYaml.indexOf(to) : undefined).trimEnd()
 const mainMenu = read('src/components/layout/MainMenu.vue')
 const menuScript = scriptOnly(mainMenu)
 const menuItems = (mainMenu.match(/ *<li v-if="!?authStore\.isLogin" class="nav-item">[\s\S]*?<\/li>/g) || [])
@@ -120,8 +129,8 @@ const html = `<!doctype html>
 
 <div class="cover">
   <div class="kicker">WEB TECHNOLOGY AND WEB SERVICES · 01418441</div>
-  <h1>คู่มือทำ Lab 09–12<br>Authentication, JWT, Cart &amp; File Upload</h1>
-  <p class="sub">ขั้นตอนละเอียดสำหรับโปรเจกต์ KUSHOP ตั้งแต่สร้างตารางในฐานข้อมูล เขียน backend และ frontend ระบบสมาชิก การเข้าสู่ระบบด้วย JWT ใน cookie ตะกร้าสินค้าที่เก็บในฐานข้อมูล การอัปโหลดรูปสมาชิก และการ deploy ขึ้น NGINX</p>
+  <h1>คู่มือทำ Lab 09–13<br>Authentication, JWT, Cart, File Upload &amp; API Document</h1>
+  <p class="sub">ขั้นตอนละเอียดสำหรับโปรเจกต์ KUSHOP ตั้งแต่สร้างตารางในฐานข้อมูล เขียน backend และ frontend ระบบสมาชิก การเข้าสู่ระบบด้วย JWT ใน cookie ตะกร้าสินค้าที่เก็บในฐานข้อมูล การอัปโหลดรูปสมาชิก การ deploy ขึ้น NGINX และการทำเอกสาร API ด้วย Swagger</p>
   <div class="meta">
     โค้ดทั้งหมดในเอกสารนี้ดึงมาจากไฟล์จริงในโปรเจกต์ ณ วันที่สร้างเอกสาร<br>
     Node.js ${esc(pkg.engines.node)} · Express · PostgreSQL · Vue 3 · Pinia
@@ -131,7 +140,7 @@ const html = `<!doctype html>
 <section class="toc">
   <h2>สารบัญ</h2>
   <ul class="toc-parts">
-    <li><b>ส่วน A</b> สรุปสิ่งที่ทำไปแล้วใน Lab 09–12</li>
+    <li><b>ส่วน A</b> สรุปสิ่งที่ทำไปแล้วใน Lab 09–13</li>
     <li><b>ส่วน B</b> สิ่งที่ต้องทำเอง (ทีละขั้น)</li>
     <li><b>ส่วน C</b> ติดตั้งบนเครื่องใหม่หลัง clone / pull จาก GitHub</li>
     <li><b>ส่วน D</b> ผังโครงสร้างไฟล์ทั้งโปรเจกต์</li>
@@ -152,13 +161,14 @@ const html = `<!doctype html>
     <li>ปัญหาที่พบบ่อยและวิธีแก้</li>
     <li>Lab 12: อัปโหลดและแสดงรูปสมาชิก</li>
     <li>Lab 12: Deploy ด้วย NGINX</li>
+    <li>Lab 13: เอกสาร API ด้วย Swagger (OpenAPI)</li>
     <li>ส่วนที่ทำเพิ่มนอกแลป (ฟิลเตอร์ ตัวเลือกแบบ custom และการลบข้อมูล)</li>
     <li>สิ่งที่ต่างจากเอกสารแลป</li>
   </ol>
 </section>
 
 <section>
-  <h2><span class="no">A</span>สิ่งที่ทำไปแล้วใน Lab 09–12</h2>
+  <h2><span class="no">A</span>สิ่งที่ทำไปแล้วใน Lab 09–13</h2>
   <p>ส่วนนี้สรุปว่าในโปรเจกต์มีอะไรทำเสร็จแล้วบ้าง <b>ไม่ต้องเขียนโค้ดเหล่านี้ซ้ำ</b> โค้ดเต็มอยู่ในหัวข้อ 5, 7–10</p>
 
   <h3>A.1 Lab 09 – Authentication</h3>
@@ -626,6 +636,7 @@ SECRET_KEY=ใส่ค่าสุ่มยาวๆ-ที่นี่`, 'env'
 │   │   ├── productController.js CRUD สินค้า + รูปสินค้า + ค้นหา
 │   │   ├── cartController.js    ตะกร้าทั้งชุดตาม Lab 11
 │   │   └── databaseController.js  ดูทุกตาราง + ลบ member / cart / แถวตารางอ้างอิง
+│   ├── swagger.yaml          OpenAPI spec ที่ Swagger UI อ่าน (/api-docs)
 │   └── routes/
 │       ├── memberRoute.js    /members/*
 │       ├── productRoute.js   /products/*, /search/products/:id
@@ -695,7 +706,7 @@ router.delete("/members/photo", requireLogin, memberC.deleteMemberPhoto);`, 'js'
 
   <h3>Frontend</h3>
   <p>หน้า <code>src/pages/PageMember.vue</code> แสดงรูป มีฟอร์มอัปโหลด ปุ่มลบรูป และอวาตาร์สำเร็จรูปให้เลือก</p>
-  ${code('PageMember.vue — ส่งไฟล์ด้วย FormData', fn(scriptOnly(pageMember), 'sendPhoto'), 'js')}
+  ${code('PageMember.vue — ส่งไฟล์ด้วย FormData', constFn(scriptOnly(pageMember), 'sendPhoto'), 'js')}
   ${code('PageMember.vue — URL ของรูปและการกันแคช', scriptOnly(pageMember).split('\n').filter((line) => /photoUrl|photoStamp|photoPath\.value = member/.test(line)).join('\n'), 'js')}
   ${note('tip', 'ทำไมต้องมี ?t=', 'ถ้าอัปโหลดรูปใหม่ทับชื่อไฟล์เดิม เบราว์เซอร์จะยังโชว์รูปเก่าจากแคช จึงต่อท้าย URL ด้วยเวลาปัจจุบัน (<code>?t=1735…</code>) ทุกครั้งที่อัปโหลดสำเร็จ URL เปลี่ยน เบราว์เซอร์จึงโหลดรูปใหม่')}
   ${note('tip', 'ต่างจากแลป: ไม่ต้องเดานามสกุลไฟล์', 'แลปใช้ <code>new Image()</code> ลองโหลด <code>&lt;email&gt;.jpg</code> เพื่อดูว่ามีรูปไหม โปรเจกต์นี้เก็บนามสกุลจริง (png อัปโหลดมาก็เก็บเป็น .png) แล้วให้ <code>GET /members/detail</code> ตอบ <code>photo</code> เป็น path ของไฟล์จริงมาเลย หน้าเว็บจึงไม่ต้องเดา')}
@@ -723,8 +734,61 @@ router.delete("/members/photo", requireLogin, memberC.deleteMemberPhoto);`, 'js'
   ${note('tip', 'พอร์ต 80 ชนกับโปรแกรมอื่น', 'ถ้า <code>start nginx</code> แล้วเปิด localhost ไม่ขึ้น ให้ดูใน <code>&lt;nginx&gt;/logs/error.log</code> ส่วนใหญ่เกิดจากมีโปรแกรมอื่นจองพอร์ต 80 อยู่ แก้โดยเปลี่ยน <code>listen 80;</code> เป็นพอร์ตอื่น เช่น <code>8080</code> แล้วเพิ่ม origin นั้นใน CORS ด้วย')}
 </section>
 
+
 <section>
-  <h2><span class="no">15</span>ส่วนที่ทำเพิ่มนอกแลป</h2>
+  <h2><span class="no">15</span>Lab 13: เอกสาร API ด้วย Swagger</h2>
+  <p>Swagger UI อ่านไฟล์ OpenAPI (เขียนด้วย YAML) แล้วสร้างหน้าเอกสาร API ที่กดทดลองยิง request ได้ทันที
+     เปิดดูได้ที่ <b>http://localhost:3000/api-docs</b></p>
+
+  <h3>ติดตั้ง</h3>
+  ${code('Terminal', `npm install swagger-ui-express yaml`, 'bash')}
+
+  <h3>ผูกเข้ากับ Express</h3>
+  <p>ใส่ไว้ <b>หลัง</b> การผูก route ทั้งหมดใน <code>server/index.js</code></p>
+  ${code('server/index.js', serverIndex.slice(serverIndex.indexOf('// API document'), serverIndex.indexOf('app.listen')).trimEnd(), 'js')}
+  ${note('tip', 'ทำไมต้องใช้ path.dirname(fileURLToPath(import.meta.url))', 'เอกสารแลปอ่านไฟล์ด้วย path ตรง ๆ (<code>services/swagger.yaml</code>) ซึ่งอิงกับโฟลเดอร์ที่สั่งรัน ถ้ารันจากที่อื่นจะหาไฟล์ไม่เจอ ในโปรเจกต์นี้อ้างอิงจากตำแหน่งของ <code>server/index.js</code> เอง จึงรันจากที่ไหนก็ได้')}
+
+  <h3>โครงของไฟล์ YAML</h3>
+  <ul>
+    <li><b>Comment</b> ขึ้นต้นด้วย <code>#</code></li>
+    <li><b>Key-value</b> คั่นด้วย <code>:</code> และหนึ่งช่องว่าง</li>
+    <li><b>Indentation</b> ใช้ช่องว่าง (ห้าม tab) การเยื้องบอกว่าอะไรเป็นลูกของอะไร เหมือน Python</li>
+    <li><b>List</b> ขึ้นต้นแต่ละรายการด้วย <code>-</code></li>
+    <li><b>|</b> หลัง key แปลว่าค่าถัดไปเป็นข้อความหลายบรรทัด</li>
+  </ul>
+  ${code('server/swagger.yaml — ส่วนหัวและ server', swaggerYamlPart('openapi: 3.0.4', 'tags:'), 'yaml')}
+
+  <h3>GET: อธิบาย endpoint และ response</h3>
+  ${code('server/swagger.yaml — GET /products', swaggerYamlPart('  /products:', '  /products/three:'), 'yaml')}
+  <p><code>$ref</code> คือการอ้างอิงไปที่ schema ที่ประกาศไว้ใน <code>components</code> จะได้ไม่ต้องเขียนรายละเอียดซ้ำทุกที่</p>
+
+  <h3>GET + Parameters</h3>
+  <p>endpoint ที่มีตัวแปรใน path เขียนชื่อไว้ในวงเล็บปีกกา แล้วประกาศไว้ใต้ <code>parameters</code></p>
+  ${code('server/swagger.yaml — GET /products/{id}', swaggerYamlPart('  /products/{id}:', '    put:'), 'yaml')}
+
+  <h3>POST ผ่าน Body</h3>
+  <p>endpoint เดียวกันแต่คนละ method ให้เขียนไว้ใต้ path เดียวกัน แยกกันที่ชื่อ method</p>
+  ${code('server/swagger.yaml — POST /products และ schema ที่ใช้', [swaggerYamlPart('    post:', '  /products/three:'), '', swaggerYamlPart('    new_product:', '    register_member:')].join('\n'), 'yaml')}
+
+  <h3>บอกว่า endpoint ไหนต้องล็อกอิน</h3>
+  <p>ประกาศวิธียืนยันตัวตนไว้ที่ <code>components.securitySchemes</code> แล้วใส่ <code>security</code> ให้ endpoint ที่ต้องใช้
+     Swagger UI จะขึ้นรูปกุญแจที่ endpoint นั้น</p>
+  ${code('server/swagger.yaml — cookie auth', swaggerYamlPart('  securitySchemes:', '  parameters:'), 'yaml')}
+  ${note('warn', 'ทดลองยิงจากหน้า Swagger', 'cookie เป็น httpOnly + SameSite=Strict ปุ่ม Try it out จะใช้ได้ก็ต่อเมื่อ login ผ่านหน้าเว็บในเบราว์เซอร์เดียวกันมาก่อน เพราะ Swagger UI ยิงจาก origin <code>localhost:3000</code> ซึ่งเบราว์เซอร์จะแนบ cookie ให้เอง ส่วน endpoint ที่ต้องเป็นแอดมินก็ต้องล็อกอินด้วยบัญชีแอดมิน')}
+
+  <h3>สิ่งที่เอกสารนี้ครอบคลุม</h3>
+  <table>
+    <tr><th style="width:22%">กลุ่ม</th><th style="width:14%">จำนวน</th><th>ตัวอย่าง endpoint</th></tr>
+    <tr><td>Products</td><td>9</td><td><code>GET /products</code>, <code>POST /products</code>, <code>DELETE /products/{id}</code></td></tr>
+    <tr><td>Members</td><td>8</td><td><code>POST /members/login</code>, <code>POST /members/uploadimg</code></td></tr>
+    <tr><td>Carts</td><td>11</td><td><code>POST /carts/addcartdtl</code>, <code>PUT /carts/cfcart/{id}</code></td></tr>
+    <tr><td>Database</td><td>5</td><td><code>GET /database/overview</code>, <code>PUT /database/members/{memEmail}/role</code></td></tr>
+  </table>
+  ${note('tip', 'เอกสารต้องตรงกับโค้ดเสมอ', 'ทุก route ที่ Express ผูกไว้ถูกเขียนไว้ในไฟล์ YAML ครบทั้ง 33 รายการ เวลาเพิ่ม route ใหม่ให้เพิ่มใน <code>server/swagger.yaml</code> ด้วย ไม่งั้นเอกสารจะบอกไม่ตรงกับของจริง')}
+</section>
+
+<section>
+  <h2><span class="no">16</span>ส่วนที่ทำเพิ่มนอกแลป</h2>
   <p>ส่วนเหล่านี้ไม่มีในเอกสารแลป แต่อยู่ในโปรเจกต์แล้ว</p>
   <table>
     <tr><th style="width:26%">เรื่อง</th><th>รายละเอียด</th></tr>
@@ -736,7 +800,7 @@ router.delete("/members/photo", requireLogin, memberC.deleteMemberPhoto);`, 'js'
 </section>
 
 <section>
-  <h2><span class="no">16</span>สิ่งที่ต่างจากเอกสารแลป</h2>
+  <h2><span class="no">17</span>สิ่งที่ต่างจากเอกสารแลป</h2>
   <table>
     <tr><th style="width:34%">เอกสารแลป</th><th style="width:33%">โปรเจกต์นี้</th><th>เหตุผล</th></tr>
     <tr><td><code>bcrypt</code></td><td><code>bcryptjs</code></td><td>มีในโปรเจกต์แล้ว API เหมือนกัน ไม่ต้องคอมไพล์บน Windows</td></tr>
@@ -752,6 +816,7 @@ router.delete("/members/photo", requireLogin, memberC.deleteMemberPhoto);`, 'js'
     <tr><td>ตะกร้าเก็บใน localStorage (ของเดิมในโปรเจกต์)</td><td>เก็บในฐานข้อมูลตาม Lab 11</td><td>ตะกร้าผูกกับสมาชิก ใช้ข้ามเครื่องได้ และมีประวัติคำสั่งซื้อ</td></tr>
     <tr><td>ฟอร์ม Bootstrap ตามแลป</td><td>ดีไซน์ใหม่ + สลับภาษา ไทย/อังกฤษ</td><td>ส่วนที่ออกแบบเพิ่มในโปรเจกต์ (ถอด Bootstrap ออกแล้ว)</td></tr>
     <tr><td>Lab 12: ชื่อไฟล์รูปจาก <code>req.body.memEmail</code></td><td>ชื่อไฟล์จาก token และกรองตัวอักษรก่อนใช้</td><td>กันการทับรูปคนอื่นและการเขียนไฟล์นอกโฟลเดอร์</td></tr>
+    <tr><td>Lab 13: อ่าน <code>services/swagger.yaml</code> ด้วย path ตรง ๆ และอธิบายเฉพาะ <code>/products</code></td><td>อ่านไฟล์จากตำแหน่งของ <code>server/index.js</code> และอธิบายครบทั้ง 33 endpoint</td><td>รันจากโฟลเดอร์ไหนก็หาไฟล์เจอ และเอกสารตรงกับ API จริงทั้งหมด</td></tr>
     <tr><td>Lab 12: บันทึกเป็น <code>.jpg</code> เสมอ และเดาว่ามีรูปไหมด้วย <code>new Image()</code></td><td>เก็บนามสกุลจริง และ <code>GET /members/detail</code> บอก path ของรูปมาเลย</td><td>ไฟล์ png ไม่ถูกตั้งชื่อผิดชนิด และหน้าเว็บไม่ต้องเดา</td></tr>
   </table>
 </section>
@@ -767,14 +832,14 @@ const browser = await chromium.launch({ executablePath: CHROME })
 const page = await browser.newPage()
 await page.goto('file:///' + htmlPath.replace(/\\/g, '/'), { waitUntil: 'networkidle' })
 await page.evaluate(() => document.fonts.ready)
-const outPath = path.join(OUT_DIR, 'Lab09-12-Guide.pdf')
+const outPath = path.join(OUT_DIR, 'Lab09-13-Guide.pdf')
 await page.pdf({
     path: outPath,
     format: 'A4',
     printBackground: true,
     displayHeaderFooter: true,
     headerTemplate: '<span></span>',
-    footerTemplate: '<div style="width:100%;padding:0 16mm;font:8pt sans-serif;color:#64748b;display:flex;justify-content:space-between"><span>KUSHOP · Lab 09–12 Guide</span><span><span class="pageNumber"></span> / <span class="totalPages"></span></span></div>',
+    footerTemplate: '<div style="width:100%;padding:0 16mm;font:8pt sans-serif;color:#64748b;display:flex;justify-content:space-between"><span>KUSHOP · Lab 09–13 Guide</span><span><span class="pageNumber"></span> / <span class="totalPages"></span></span></div>',
     margin: { top: '18mm', bottom: '20mm', left: '16mm', right: '16mm' }
 })
 await browser.close()
